@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_van_sales_mobile"
+              name="Mobile"
+              parent="van_sales_base.menu_van_sales_root"
+              groups="van_sales_base.group_van_sales_manager"
+              sequence="80"/>
+
+    <menuitem id="menu_van_sales_device"
+              name="Devices"
+              parent="menu_van_sales_mobile"
+              action="van_sales_device_action"
+              sequence="10"/>
+
+    <menuitem id="menu_van_sales_notification"
+              name="Push Notifications"
+              parent="menu_van_sales_mobile"
+              action="van_sales_notification_action"
+              sequence="20"/>
+
+    <menuitem id="menu_van_sales_sync_log"
+              name="Sync Log"
+              parent="menu_van_sales_mobile"
+              action="van_sales_sync_log_action"
+              sequence="30"/>
+
+    <menuitem id="menu_van_sales_api_log"
+              name="API Log"
+              parent="menu_van_sales_mobile"
+              action="van_sales_api_log_action"
+              sequence="40"/>
+
+</odoo>

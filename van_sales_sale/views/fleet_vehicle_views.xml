@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="fleet_vehicle_view_form_van_sales_sale" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.van.sales.sale</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="van_sales_base.fleet_vehicle_view_form_van_sales"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_van_sales_view_orders" type="object"
+                        class="oe_stat_button" icon="fa-shopping-cart"
+                        invisible="not is_sales_van">
+                    <field name="van_sale_order_count" widget="statinfo"
+                           string="Orders"/>
+                </button>
+            </xpath>
+
+            <xpath expr="//page[@name='van_sales']/group" position="after">
+                <group string="Selling" name="van_sales_selling">
+                    <field name="van_delivery_route_id" readonly="1"/>
+                </group>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not is_sales_van or van_delivery_route_id or not van_location_id">
+                    This van has no delivery route yet, so its sales would ship
+                    from the warehouse instead of the van. Reinstall or upgrade
+                    Van Sales - Sale to provision it.
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

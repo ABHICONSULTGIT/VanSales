@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_van_sales_collection_user,van.sales.collection user,model_van_sales_collection,van_sales_base.group_van_sales_user,1,1,1,0
+access_van_sales_collection_supervisor,van.sales.collection supervisor,model_van_sales_collection,van_sales_base.group_van_sales_supervisor,1,1,1,0
+access_van_sales_collection_manager,van.sales.collection manager,model_van_sales_collection,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_collection_line_user,van.sales.collection.line user,model_van_sales_collection_line,van_sales_base.group_van_sales_user,1,1,1,1
+access_van_sales_collection_line_supervisor,van.sales.collection.line supervisor,model_van_sales_collection_line,van_sales_base.group_van_sales_supervisor,1,1,1,1
+access_van_sales_collection_line_manager,van.sales.collection.line manager,model_van_sales_collection_line,van_sales_base.group_van_sales_manager,1,1,1,1
+access_account_move_van_sales_user,account.move van sales user,account.model_account_move,van_sales_base.group_van_sales_user,1,0,0,0
+access_account_move_line_van_sales_user,account.move.line van sales user,account.model_account_move_line,van_sales_base.group_van_sales_user,1,0,0,0
+access_account_payment_van_sales_user,account.payment van sales user,account.model_account_payment,van_sales_base.group_van_sales_user,1,0,0,0
+access_stock_route_van_sales_user,stock.route van sales user,stock.model_stock_route,van_sales_base.group_van_sales_user,1,0,0,0

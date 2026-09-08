@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        A Van Sales Administrator loads vans, validates transfers and applies
+        inventory adjustments. All three are Inventory User operations, so the
+        role implies that group rather than this module re-granting a pile of
+        stock ACLs it would then have to keep in step with Odoo.
+
+        (4, ...) adds without replacing what van_sales_base already set.
+    -->
+    <record id="van_sales_base.group_van_sales_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+    </record>
+
+</odoo>

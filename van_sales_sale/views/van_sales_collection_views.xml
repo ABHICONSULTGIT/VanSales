@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_collection_view_form" model="ir.ui.view">
+        <field name="name">van.sales.collection.form</field>
+        <field name="model">van.sales.collection</field>
+        <field name="arch" type="xml">
+            <form string="Cash Collection">
+                <header>
+                    <button name="action_load_open_invoices" type="object"
+                            string="Load Open Invoices"
+                            invisible="state != 'draft' or not partner_id"/>
+                    <button name="action_allocate_full" type="object"
+                            string="Allocate In Full"
+                            invisible="state != 'draft' or not line_ids"/>
+                    <button name="action_clear_allocation" type="object"
+                            string="Clear"
+                            invisible="state != 'draft' or amount_total == 0"/>
+                    <button name="action_post" type="object"
+                            string="Post Collection" class="btn-primary"
+                            confirm="This records the money against the invoices you allocated it to. Continue?"
+                            invisible="state != 'draft' or amount_total == 0"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancel" invisible="state != 'draft'"/>
+                    <button name="action_draft" type="object"
+                            string="Reset to Draft" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_payments" type="object"
+                                class="oe_stat_button" icon="fa-money"
+                                invisible="payment_count == 0">
+                            <field name="payment_count" widget="statinfo"
+                                   string="Payments"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="van_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="visit_id" readonly="1"
+                                   invisible="not visit_id"/>
+                            <field name="salesman_user_id"
+                                   widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="journal_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="memo" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        <b>Allocated</b> starts at zero on every line. Type what
+                        the customer actually paid against each invoice — one
+                        payment is created per line, so the split is exactly
+                        what you enter.
+                    </div>
+                    <notebook>
+                        <page string="Allocation" name="allocation">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list string="Allocation" editable="bottom">
+                                    <field name="move_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="move_date" optional="show"/>
+                                    <field name="move_date_due" optional="show"/>
+                                    <field name="move_total" optional="hide"/>
+                                    <field name="move_residual"/>
+                                    <field name="amount" sum="Collected"/>
+                                    <field name="payment_id" optional="hide"
+                                           readonly="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="state" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="amount_total"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_collection_view_list" model="ir.ui.view">
+        <field name="name">van.sales.collection.list</field>
+        <field name="model">van.sales.collection</field>
+        <field name="arch" type="xml">
+            <list string="Cash Collections"
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'posted'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="van_id" optional="show"/>
+                <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                <field name="journal_id" optional="hide"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'posted'"
+                       decoration-muted="state == 'cancel'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_collection_view_search" model="ir.ui.view">
+        <field name="name">van.sales.collection.search</field>
+        <field name="model">van.sales.collection</field>
+        <field name="arch" type="xml">
+            <search string="Cash Collections">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id"/>
+                <filter name="mine" string="My Collections"
+                        domain="[('salesman_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="today" string="Today"
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="posted" string="Posted"
+                        domain="[('state', '=', 'posted')]"/>
+                <group>
+                    <filter name="group_by_van" string="Van"
+                            context="{'group_by': 'van_id'}"/>
+                    <filter name="group_by_salesman" string="Salesman"
+                            context="{'group_by': 'salesman_user_id'}"/>
+                    <filter name="group_by_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_by_date" string="Date"
+                            context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="van_sales_collection_action" model="ir.actions.act_window">
+        <field name="name">Cash Collections</field>
+        <field name="res_model">van.sales.collection</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="van_sales_collection_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Record money collected on the route
+            </p>
+            <p>
+                One receipt can settle several invoices, with an explicit amount
+                against each. Odoo's own reconciliation is first-in-first-out by
+                due date, so the split is recorded here instead.
+            </p>
+        </field>
+    </record>
+
+</odoo>

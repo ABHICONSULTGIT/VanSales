@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_picking_form_van_sales" model="ir.ui.view">
+        <field name="name">stock.picking.form.van.sales</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_van_sales_view_van" type="object"
+                        class="oe_stat_button" icon="fa-truck"
+                        invisible="not van_id">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Van</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="after">
+                <field name="van_has_discrepancy" invisible="1"/>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not van_has_discrepancy">
+                    The quantity received differs from the quantity sent by
+                    <field name="van_discrepancy_qty" class="oe_inline fw-bold"/>.
+                    Record why in the Van Sales section of the Additional Info
+                    tab.
+                </div>
+            </xpath>
+
+            <xpath expr="//group[@name='other_infos']" position="after">
+                <group string="Van Sales" name="van_sales"
+                       invisible="not van_operation">
+                    <field name="van_operation" readonly="1"/>
+                    <field name="van_id" readonly="1"/>
+                    <field name="van_src_id" readonly="1"
+                           invisible="van_operation == 'load'"/>
+                    <field name="van_dest_id" readonly="1"
+                           invisible="van_operation == 'unload'"/>
+                    <field name="van_salesman_user_id" readonly="1"
+                           widget="many2one_avatar_user"/>
+                    <field name="van_reconciliation_id" readonly="1"
+                           invisible="not van_reconciliation_id"/>
+                    <field name="van_discrepancy_note"
+                           invisible="not van_has_discrepancy"/>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="vpicktree_van_sales" model="ir.ui.view">
+        <field name="name">stock.picking.list.van.sales</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <!-- Appended and hidden by default, so Inventory users see no change. -->
+            <xpath expr="//list" position="inside">
+                <field name="van_id" optional="hide"/>
+                <field name="van_operation" optional="hide"/>
+                <field name="van_salesman_user_id" optional="hide"
+                       widget="many2one_avatar_user"/>
+                <field name="van_has_discrepancy" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_internal_search_van_sales" model="ir.ui.view">
+        <field name="name">stock.picking.search.van.sales</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="van_id"/>
+                <field name="van_salesman_user_id"/>
+                <filter name="van_sales_loads" string="Van Loads"
+                        domain="[('van_operation', '=', 'load')]"/>
+                <filter name="van_sales_returns" string="Van Returns"
+                        domain="[('van_operation', '=', 'unload')]"/>
+                <filter name="van_sales_deliveries" string="Van Deliveries"
+                        domain="[('van_operation', '=', 'delivery')]"/>
+                <filter name="van_sales_discrepancy" string="With Discrepancy"
+                        domain="[('van_has_discrepancy', '=', True)]"/>
+                <filter name="van_sales_group_by_van" string="Van"
+                        context="{'group_by': 'van_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="van_sales_load_action" model="ir.actions.act_window">
+        <field name="name">Van Loads</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('van_operation', '=', 'load')]</field>
+        <field name="context">{'search_default_van_sales_group_by_van': 1}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No van loads yet
+            </p>
+            <p>
+                A van load is an ordinary internal transfer from the warehouse
+                into a van's stock location. Raise one from the van's form with
+                the <b>Load Van</b> button.
+            </p>
+        </field>
+    </record>
+
+    <record id="van_sales_return_action" model="ir.actions.act_window">
+        <field name="name">Van Returns</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('van_operation', 'in', ('unload', 'van_transfer'))]</field>
+        <field name="context">{'search_default_van_sales_group_by_van': 1}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No van returns yet
+            </p>
+            <p>
+                Unsold stock coming back from a van at the end of the day, and
+                any van-to-van transfer.
+            </p>
+        </field>
+    </record>
+
+</odoo>

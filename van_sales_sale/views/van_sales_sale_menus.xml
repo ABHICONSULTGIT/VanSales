@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_van_sales_order"
+              name="Van Orders"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_order_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="60"/>
+
+    <menuitem id="menu_van_sales_invoice"
+              name="Van Invoices"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_invoice_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="70"/>
+
+    <menuitem id="menu_van_sales_collection"
+              name="Cash Collections"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_collection_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="80"/>
+
+</odoo>

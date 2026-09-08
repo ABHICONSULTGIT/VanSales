@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_visit_view_form" model="ir.ui.view">
+        <field name="name">van.sales.visit.form</field>
+        <field name="model">van.sales.visit</field>
+        <field name="arch" type="xml">
+            <form string="Visit">
+                <header>
+                    <button name="action_check_in" type="object"
+                            string="Check In" class="btn-primary"
+                            invisible="state != 'planned'"/>
+                    <button name="action_check_out" type="object"
+                            string="Check Out" class="btn-primary"
+                            invisible="state != 'checked_in'"/>
+                    <button name="action_skip" type="object"
+                            string="Skip"
+                            invisible="state not in ('planned', 'checked_in')"/>
+                    <button name="action_reset_to_planned" type="object"
+                            string="Reset to Planned"
+                            groups="van_sales_base.group_van_sales_supervisor"
+                            invisible="state == 'planned'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="planned,checked_in,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <field name="stop_type" widget="radio"
+                               options="{'horizontal': True}"
+                               readonly="state != 'planned'"/>
+                        <h1>
+                            <field name="partner_id"
+                                   invisible="stop_type != 'customer'"
+                                   required="stop_type == 'customer'"
+                                   readonly="state != 'planned'"/>
+                            <field name="stop_location_id"
+                                   invisible="stop_type != 'location'"
+                                   required="stop_type == 'location'"
+                                   readonly="state != 'planned'"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Stop">
+                            <field name="plan_id" readonly="state != 'planned'"/>
+                            <field name="date"/>
+                            <field name="route_id"/>
+                            <field name="sequence"/>
+                            <field name="stop_city"/>
+                        </group>
+                        <group string="Assignment">
+                            <field name="van_id"/>
+                            <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="is_adhoc"/>
+                            <field name="adhoc_reason" invisible="not is_adhoc"
+                                   required="is_adhoc"/>
+                            <field name="skip_reason"
+                                   invisible="state not in ('planned', 'checked_in', 'skipped')"/>
+                        </group>
+                    </group>
+                    <group string="Timing and Position"
+                           invisible="state == 'planned'">
+                        <group>
+                            <field name="check_in_datetime"/>
+                            <field name="check_in_latitude" digits="[10, 7]"/>
+                            <field name="check_in_longitude" digits="[10, 7]"/>
+                        </group>
+                        <group>
+                            <field name="check_out_datetime"/>
+                            <field name="check_out_latitude" digits="[10, 7]"/>
+                            <field name="check_out_longitude" digits="[10, 7]"/>
+                            <field name="duration_minutes"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_visit_view_list" model="ir.ui.view">
+        <field name="name">van.sales.visit.list</field>
+        <field name="model">van.sales.visit</field>
+        <field name="arch" type="xml">
+            <list string="Visits"
+                  decoration-muted="state == 'skipped'"
+                  decoration-success="state == 'done'"
+                  decoration-info="state == 'checked_in'">
+                <field name="sequence" column_invisible="True"/>
+                <field name="date"/>
+                <field name="stop_type" optional="hide"/>
+                <field name="partner_id" invisible="stop_type != 'customer'" optional="show"/>
+                <field name="stop_location_id" invisible="stop_type != 'location'" optional="show"/>
+                <field name="stop_city" optional="show"/>
+                <field name="route_id" optional="show"/>
+                <field name="van_id" optional="hide"/>
+                <field name="salesman_user_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="check_in_datetime" optional="hide"/>
+                <field name="check_out_datetime" optional="hide"/>
+                <field name="duration_minutes" optional="show" sum="Total"/>
+                <field name="is_adhoc" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-info="state == 'checked_in'"
+                       decoration-muted="state == 'skipped'"/>
+                <button name="action_check_in" type="object" icon="fa-sign-in"
+                        title="Check In" invisible="state != 'planned'"/>
+                <button name="action_check_out" type="object" icon="fa-sign-out"
+                        title="Check Out" invisible="state != 'checked_in'"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_visit_view_search" model="ir.ui.view">
+        <field name="name">van.sales.visit.search</field>
+        <field name="model">van.sales.visit</field>
+        <field name="arch" type="xml">
+            <search string="Visits">
+                <field name="partner_id"/>
+                <field name="stop_location_id"/>
+                <field name="route_id"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id"/>
+                <field name="plan_id"/>
+                <filter name="my_visits" string="My Visits"
+                        domain="[('salesman_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="today" string="Today"
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="planned" string="Planned"
+                        domain="[('state', '=', 'planned')]"/>
+                <filter name="checked_in" string="Checked In"
+                        domain="[('state', '=', 'checked_in')]"/>
+                <filter name="done" string="Done"
+                        domain="[('state', '=', 'done')]"/>
+                <filter name="skipped" string="Skipped"
+                        domain="[('state', '=', 'skipped')]"/>
+                <separator/>
+                <filter name="adhoc" string="Unplanned"
+                        domain="[('is_adhoc', '=', True)]"/>
+                <group>
+                    <filter name="group_by_date" string="Date"
+                            context="{'group_by': 'date'}"/>
+                    <filter name="group_by_route" string="Route"
+                            context="{'group_by': 'route_id'}"/>
+                    <filter name="group_by_salesman" string="Salesman"
+                            context="{'group_by': 'salesman_user_id'}"/>
+                    <filter name="group_by_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_by_stop_location" string="Stop Location"
+                            context="{'group_by': 'stop_location_id'}"/>
+                    <filter name="group_by_stop_type" string="Stop Type"
+                            context="{'group_by': 'stop_type'}"/>
+                    <filter name="group_by_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="van_sales_visit_action" model="ir.actions.act_window">
+        <field name="name">Visits</field>
+        <field name="res_model">van.sales.visit</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="van_sales_visit_view_search"/>
+        <field name="context">{'search_default_today': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No visits yet
+            </p>
+            <p>
+                Visits are created from a daily visit plan. Open a route and
+                use "Plan Today's Visits" to build one.
+            </p>
+        </field>
+    </record>
+
+</odoo>

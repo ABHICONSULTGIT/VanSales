@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="van_sales_device_view_list" model="ir.ui.view">
+        <field name="name">van.sales.device.list</field>
+        <field name="model">van.sales.device</field>
+        <field name="arch" type="xml">
+            <list string="Devices" create="false"
+                  decoration-muted="not active">
+                <field name="device_number"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="van_id"/>
+                <field name="device_model" optional="show"/>
+                <field name="device_type" optional="hide"/>
+                <field name="app_version" optional="show"/>
+                <field name="last_sync_at"/>
+                <field name="last_seen_at"/>
+                <field name="push_count" optional="hide"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_device_view_form" model="ir.ui.view">
+        <field name="name">van.sales.device.form</field>
+        <field name="model">van.sales.device</field>
+        <field name="arch" type="xml">
+            <form string="Device" create="false">
+                <header>
+                    <button name="action_deactivate" type="object"
+                            string="Deactivate"
+                            confirm="This cuts the device off from its very next call and revokes its tokens. Continue?"
+                            invisible="not active"/>
+                    <button name="action_activate" type="object"
+                            string="Reactivate" invisible="active"/>
+                    <button name="action_reset_sync" type="object"
+                            string="Force Full Resync"
+                            confirm="The next pull will send the whole dataset again. Continue?"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Deactivated"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sync_log" type="object"
+                                class="oe_stat_button" icon="fa-exchange">
+                            <field name="sync_log_count" widget="statinfo"
+                                   string="Sync Log"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="device_number"/>
+                        <h1><field name="device_number" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="active" invisible="1"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="van_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="device_uuid"/>
+                        </group>
+                        <group>
+                            <field name="device_type"/>
+                            <field name="device_model"/>
+                            <field name="os_version"/>
+                            <field name="app_version"/>
+                            <field name="fcm_token"/>
+                        </group>
+                    </group>
+                    <group string="Sync">
+                        <group>
+                            <field name="registered_at"/>
+                            <field name="last_seen_at"/>
+                        </group>
+                        <group>
+                            <field name="last_sync_at"/>
+                            <field name="push_count"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_device_view_search" model="ir.ui.view">
+        <field name="name">van.sales.device.search</field>
+        <field name="model">van.sales.device</field>
+        <field name="arch" type="xml">
+            <search string="Devices">
+                <field name="device_number"/>
+                <field name="device_uuid"/>
+                <field name="user_id"/>
+                <field name="van_id"/>
+                <filter name="inactive" string="Deactivated"
+                        domain="[('active', '=', False)]"/>
+                <filter name="never_synced" string="Never Synced"
+                        domain="[('last_sync_at', '=', False)]"/>
+                <filter name="no_van" string="No Van Assigned"
+                        domain="[('van_id', '=', False)]"/>
+                <group>
+                    <filter name="group_by_van" string="Van"
+                            context="{'group_by': 'van_id'}"/>
+                    <filter name="group_by_user" string="Salesman"
+                            context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="van_sales_device_action" model="ir.actions.act_window">
+        <field name="name">Mobile Devices</field>
+        <field name="res_model">van.sales.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="van_sales_device_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No devices registered yet</p>
+            <p>
+                A device appears here the first time the app signs in and
+                registers. Deactivating one cuts it off from its next call.
+            </p>
+        </field>
+    </record>
+</odoo>

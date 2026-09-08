@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_van_sales_device_user,van.sales.device user,model_van_sales_device,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_device_supervisor,van.sales.device supervisor,model_van_sales_device,van_sales_base.group_van_sales_supervisor,1,0,0,0
+access_van_sales_device_manager,van.sales.device manager,model_van_sales_device,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_notification_user,van.sales.notification user,model_van_sales_notification,van_sales_base.group_van_sales_user,1,1,0,0
+access_van_sales_notification_supervisor,van.sales.notification supervisor,model_van_sales_notification,van_sales_base.group_van_sales_supervisor,1,1,1,0
+access_van_sales_notification_manager,van.sales.notification manager,model_van_sales_notification,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_sync_log_supervisor,van.sales.sync.log supervisor,model_van_sales_sync_log,van_sales_base.group_van_sales_supervisor,1,0,0,0
+access_van_sales_sync_log_manager,van.sales.sync.log manager,model_van_sales_sync_log,van_sales_base.group_van_sales_manager,1,0,0,1
+access_van_sales_api_log_manager,van.sales.api.log manager,model_van_sales_api_log,van_sales_base.group_van_sales_manager,1,0,0,1
+access_van_sales_api_token_manager,van.sales.api.token manager,model_van_sales_api_token,van_sales_base.group_van_sales_manager,1,1,0,1
+access_van_sales_api_token_system,van.sales.api.token system,model_van_sales_api_token,base.group_system,1,1,1,1
+access_van_sales_api_log_system,van.sales.api.log system,model_van_sales_api_log,base.group_system,1,1,1,1
+access_van_sales_sync_log_system,van.sales.sync.log system,model_van_sales_sync_log,base.group_system,1,1,1,1

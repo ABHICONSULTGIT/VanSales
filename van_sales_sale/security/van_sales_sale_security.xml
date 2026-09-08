@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Selling from a van is a Sales operation and invoicing is a Billing one,
+        so the roles imply the standard Odoo groups rather than this module
+        re-granting a pile of ACLs it would then have to keep in step.
+
+        Salesman -> Sales User: Own Documents Only. That also brings sale's own
+        record rule, so a salesman sees only their own orders, for free.
+        Administrator -> Billing, so the office can invoice and collect.
+    -->
+    <record id="van_sales_base.group_van_sales_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman'))]"/>
+    </record>
+
+    <record id="van_sales_base.group_van_sales_supervisor" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman_all_leads'))]"/>
+    </record>
+
+    <record id="van_sales_base.group_van_sales_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('account.group_account_invoice'))]"/>
+    </record>
+
+    <data noupdate="1">
+        <record id="van_sales_collection_comp_rule" model="ir.rule">
+            <field name="name">Van Sales Collection: multi-company</field>
+            <field name="model_id" ref="model_van_sales_collection"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="van_sales_collection_line_comp_rule" model="ir.rule">
+            <field name="name">Van Sales Collection Line: multi-company</field>
+            <field name="model_id" ref="model_van_sales_collection_line"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="van_sales_collection_own_rule" model="ir.rule">
+            <field name="name">Van Sales Collection: own van only</field>
+            <field name="model_id" ref="model_van_sales_collection"/>
+            <field name="domain_force">['|', ('salesman_user_id', '=', user.id), ('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_user'))]"/>
+        </record>
+        <record id="van_sales_collection_all_rule" model="ir.rule">
+            <field name="name">Van Sales Collection: all vans</field>
+            <field name="model_id" ref="model_van_sales_collection"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_supervisor'))]"/>
+        </record>
+    </data>
+
+</odoo>

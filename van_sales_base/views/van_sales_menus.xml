@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_van_sales_root"
+              name="Van Sales"
+              web_icon="van_sales_base,static/description/icon.png"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="55"/>
+
+    <menuitem id="menu_van_sales_operations"
+              name="Operations"
+              parent="menu_van_sales_root"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="10"/>
+
+    <menuitem id="menu_van_sales_visit_plan"
+              name="Visit Plans"
+              parent="menu_van_sales_operations"
+              action="van_sales_visit_plan_action"
+              sequence="10"/>
+
+    <menuitem id="menu_van_sales_visit"
+              name="Visits"
+              parent="menu_van_sales_operations"
+              action="van_sales_visit_action"
+              sequence="20"/>
+
+    <menuitem id="menu_van_sales_configuration"
+              name="Configuration"
+              parent="menu_van_sales_root"
+              groups="van_sales_base.group_van_sales_manager"
+              sequence="90"/>
+
+    <menuitem id="menu_van_sales_van"
+              name="Sales Vans"
+              parent="menu_van_sales_configuration"
+              action="van_sales_van_action"
+              sequence="10"/>
+
+    <menuitem id="menu_van_sales_stop_location"
+              name="Stop Locations"
+              parent="menu_van_sales_configuration"
+              action="van_sales_stop_location_action"
+              sequence="30"/>
+
+    <menuitem id="menu_van_sales_route"
+              name="Routes"
+              parent="menu_van_sales_configuration"
+              action="van_sales_route_action"
+              sequence="20"/>
+
+</odoo>

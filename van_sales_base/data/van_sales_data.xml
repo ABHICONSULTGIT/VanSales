@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            'standard' implementation: gaps are acceptable here because the
+            route code is only an internal label, and 'no_gap' serialises
+            every allocation against a row lock. The code stays editable, so a
+            client with their own numbering scheme simply types over it.
+        -->
+        <record id="seq_van_sales_route" model="ir.sequence">
+            <field name="name">Van Sales Route</field>
+            <field name="code">van.sales.route</field>
+            <field name="prefix">R</field>
+            <field name="padding">5</field>
+            <field name="implementation">standard</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

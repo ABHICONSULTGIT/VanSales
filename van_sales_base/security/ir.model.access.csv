@@ -1,0 +1,21 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_van_sales_route_user,van.sales.route user,model_van_sales_route,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_route_manager,van.sales.route manager,model_van_sales_route,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_route_line_user,van.sales.route.line user,model_van_sales_route_line,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_route_line_manager,van.sales.route.line manager,model_van_sales_route_line,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_visit_plan_user,van.sales.visit.plan user,model_van_sales_visit_plan,van_sales_base.group_van_sales_user,1,1,0,0
+access_van_sales_visit_plan_supervisor,van.sales.visit.plan supervisor,model_van_sales_visit_plan,van_sales_base.group_van_sales_supervisor,1,1,1,0
+access_van_sales_visit_plan_manager,van.sales.visit.plan manager,model_van_sales_visit_plan,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_visit_user,van.sales.visit user,model_van_sales_visit,van_sales_base.group_van_sales_user,1,1,1,0
+access_van_sales_visit_supervisor,van.sales.visit supervisor,model_van_sales_visit,van_sales_base.group_van_sales_supervisor,1,1,1,1
+access_van_sales_visit_manager,van.sales.visit manager,model_van_sales_visit,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_van_location_wizard_manager,van.sales.van.location.wizard manager,model_van_sales_van_location_wizard,van_sales_base.group_van_sales_manager,1,1,1,1
+access_fleet_vehicle_van_sales_user,fleet.vehicle van sales user,fleet.model_fleet_vehicle,van_sales_base.group_van_sales_user,1,0,0,0
+access_fleet_vehicle_van_sales_manager,fleet.vehicle van sales manager,fleet.model_fleet_vehicle,van_sales_base.group_van_sales_manager,1,1,1,0
+access_fleet_vehicle_model_van_sales_user,fleet.vehicle.model van sales user,fleet.model_fleet_vehicle_model,van_sales_base.group_van_sales_user,1,0,0,0
+access_fleet_vehicle_model_brand_van_sales_user,fleet.vehicle.model.brand van sales user,fleet.model_fleet_vehicle_model_brand,van_sales_base.group_van_sales_user,1,0,0,0
+access_fleet_vehicle_state_van_sales_user,fleet.vehicle.state van sales user,fleet.model_fleet_vehicle_state,van_sales_base.group_van_sales_user,1,0,0,0
+access_fleet_vehicle_tag_van_sales_user,fleet.vehicle.tag van sales user,fleet.model_fleet_vehicle_tag,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_stop_location_user,van.sales.stop.location user,model_van_sales_stop_location,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_stop_location_supervisor,van.sales.stop.location supervisor,model_van_sales_stop_location,van_sales_base.group_van_sales_supervisor,1,1,1,0
+access_van_sales_stop_location_manager,van.sales.stop.location manager,model_van_sales_stop_location,van_sales_base.group_van_sales_manager,1,1,1,1

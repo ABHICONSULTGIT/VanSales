@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_van_sales_load"
+              name="Van Loads"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_load_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="30"/>
+
+    <menuitem id="menu_van_sales_return"
+              name="Van Returns"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_return_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="40"/>
+
+    <menuitem id="menu_van_sales_reconciliation"
+              name="Reconciliations"
+              parent="van_sales_base.menu_van_sales_operations"
+              action="van_sales_reconciliation_action"
+              groups="van_sales_base.group_van_sales_user"
+              sequence="50"/>
+
+</odoo>

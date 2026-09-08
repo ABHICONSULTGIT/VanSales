@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ================================================================
+         Multi-company rules (global: no groups, so they are AND-ed with
+         everything else).
+         ================================================================ -->
+    <record id="van_sales_route_comp_rule" model="ir.rule">
+        <field name="name">Van Sales Route: multi-company</field>
+        <field name="model_id" ref="model_van_sales_route"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="van_sales_route_line_comp_rule" model="ir.rule">
+        <field name="name">Van Sales Route Customer: multi-company</field>
+        <field name="model_id" ref="model_van_sales_route_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="van_sales_stop_location_comp_rule" model="ir.rule">
+        <field name="name">Van Sales Stop Location: multi-company</field>
+        <field name="model_id" ref="model_van_sales_stop_location"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="van_sales_visit_plan_comp_rule" model="ir.rule">
+        <field name="name">Van Sales Visit Plan: multi-company</field>
+        <field name="model_id" ref="model_van_sales_visit_plan"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="van_sales_visit_comp_rule" model="ir.rule">
+        <field name="name">Van Sales Visit: multi-company</field>
+        <field name="model_id" ref="model_van_sales_visit"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- ================================================================
+         Own-van scoping. Group rules are OR-ed, so the supervisor's
+         unrestricted rule widens what the restrictive user rule allows.
+         ================================================================ -->
+    <record id="van_sales_route_own_rule" model="ir.rule">
+        <field name="name">Van Sales Route: own van only</field>
+        <field name="model_id" ref="model_van_sales_route"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_route_all_rule" model="ir.rule">
+        <field name="name">Van Sales Route: all vans</field>
+        <field name="model_id" ref="model_van_sales_route"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+    </record>
+
+    <record id="van_sales_route_line_own_rule" model="ir.rule">
+        <field name="name">Van Sales Route Customer: own van only</field>
+        <field name="model_id" ref="model_van_sales_route_line"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_route_line_all_rule" model="ir.rule">
+        <field name="name">Van Sales Route Customer: all vans</field>
+        <field name="model_id" ref="model_van_sales_route_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+    </record>
+
+    <record id="van_sales_visit_plan_own_rule" model="ir.rule">
+        <field name="name">Van Sales Visit Plan: own plans only</field>
+        <field name="model_id" ref="model_van_sales_visit_plan"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_visit_plan_all_rule" model="ir.rule">
+        <field name="name">Van Sales Visit Plan: all plans</field>
+        <field name="model_id" ref="model_van_sales_visit_plan"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+    </record>
+
+    <record id="van_sales_visit_own_rule" model="ir.rule">
+        <field name="name">Van Sales Visit: own visits only</field>
+        <field name="model_id" ref="model_van_sales_visit"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_visit_all_rule" model="ir.rule">
+        <field name="name">Van Sales Visit: all visits</field>
+        <field name="model_id" ref="model_van_sales_visit"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+    </record>
+
+    <!-- ================================================================
+         fleet.vehicle scoping.
+
+         Fleet ships no group-level rule for fleet_group_user, so a Fleet
+         Officer currently sees every vehicle. Adding the restrictive rule
+         below would silently narrow that for anyone who is both a Fleet
+         Officer and a plain Van Sales User, because group rules are OR-ed and
+         only matching rules count. The third rule restores fleet's own
+         semantics explicitly, so installing this module changes nothing for
+         existing Fleet users.
+         ================================================================ -->
+    <record id="fleet_vehicle_van_sales_own_rule" model="ir.rule">
+        <field name="name">Van Sales: own van only</field>
+        <field name="model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
+    </record>
+    <record id="fleet_vehicle_van_sales_all_rule" model="ir.rule">
+        <field name="name">Van Sales Supervisor: all vehicles</field>
+        <field name="model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+    </record>
+    <record id="fleet_vehicle_fleet_officer_rule" model="ir.rule">
+        <field name="name">Fleet Officer: all vehicles (preserves Fleet behaviour)</field>
+        <field name="model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('fleet.fleet_group_user'))]"/>
+    </record>
+
+</odoo>

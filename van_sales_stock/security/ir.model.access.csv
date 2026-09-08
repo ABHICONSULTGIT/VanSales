@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_van_sales_reconciliation_user,van.sales.reconciliation user,model_van_sales_reconciliation,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_reconciliation_supervisor,van.sales.reconciliation supervisor,model_van_sales_reconciliation,van_sales_base.group_van_sales_supervisor,1,1,1,0
+access_van_sales_reconciliation_manager,van.sales.reconciliation manager,model_van_sales_reconciliation,van_sales_base.group_van_sales_manager,1,1,1,1
+access_van_sales_reconciliation_line_user,van.sales.reconciliation.line user,model_van_sales_reconciliation_line,van_sales_base.group_van_sales_user,1,0,0,0
+access_van_sales_reconciliation_line_supervisor,van.sales.reconciliation.line supervisor,model_van_sales_reconciliation_line,van_sales_base.group_van_sales_supervisor,1,1,1,1
+access_van_sales_reconciliation_line_manager,van.sales.reconciliation.line manager,model_van_sales_reconciliation_line,van_sales_base.group_van_sales_manager,1,1,1,1
+access_stock_picking_van_sales_user,stock.picking van sales user,stock.model_stock_picking,van_sales_base.group_van_sales_user,1,0,0,0
+access_stock_picking_van_sales_supervisor,stock.picking van sales supervisor,stock.model_stock_picking,van_sales_base.group_van_sales_supervisor,1,0,0,0
+access_stock_move_van_sales_user,stock.move van sales user,stock.model_stock_move,van_sales_base.group_van_sales_user,1,0,0,0
+access_stock_move_van_sales_supervisor,stock.move van sales supervisor,stock.model_stock_move,van_sales_base.group_van_sales_supervisor,1,0,0,0

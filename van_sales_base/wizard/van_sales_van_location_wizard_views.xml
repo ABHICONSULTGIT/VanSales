@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_van_location_wizard_view_form" model="ir.ui.view">
+        <field name="name">van.sales.van.location.wizard.form</field>
+        <field name="model">van.sales.van.location.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Van Stock Locations">
+                <div class="alert alert-info" role="alert">
+                    Each van gets its own internal stock location under
+                    <strong>&lt;Warehouse&gt; / Vans</strong>. A location, not a
+                    warehouse: a warehouse per van would create eight operation
+                    types and eight sequences each, and gives nothing extra.
+                </div>
+                <group>
+                    <group>
+                        <field name="warehouse_id" options="{'no_create': True}"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="parent_location_id"
+                               invisible="not parent_location_id"/>
+                    </group>
+                    <group>
+                        <field name="vehicle_todo_count"/>
+                        <field name="vehicle_done_count"/>
+                    </group>
+                </group>
+                <group string="Vehicles">
+                    <field name="vehicle_ids" nolabel="1" colspan="2">
+                        <list string="Vehicles">
+                            <field name="license_plate"/>
+                            <field name="model_id"/>
+                            <field name="is_sales_van"/>
+                            <field name="van_warehouse_id"/>
+                            <field name="van_location_id"/>
+                            <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                        </list>
+                    </field>
+                </group>
+                <div class="alert alert-warning" role="alert"
+                     invisible="vehicle_done_count == 0">
+                    Vehicles that already have a stock location are left
+                    untouched.
+                </div>
+                <footer>
+                    <button name="action_create_locations" type="object"
+                            string="Create Locations" class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_van_location_wizard_action" model="ir.actions.act_window">
+        <field name="name">Create Van Stock Locations</field>
+        <field name="res_model">van.sales.van.location.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="fleet.model_fleet_vehicle"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[Command.link(ref('van_sales_base.group_van_sales_manager'))]"/>
+    </record>
+
+</odoo>

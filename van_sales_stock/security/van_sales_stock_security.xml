@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ================================================================
+         Reconciliation
+         ================================================================ -->
+    <record id="van_sales_reconciliation_comp_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation: multi-company</field>
+        <field name="model_id" ref="model_van_sales_reconciliation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="van_sales_reconciliation_line_comp_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation Line: multi-company</field>
+        <field name="model_id" ref="model_van_sales_reconciliation_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="van_sales_reconciliation_own_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation: own van only</field>
+        <field name="model_id" ref="model_van_sales_reconciliation"/>
+        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_reconciliation_all_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation: all vans</field>
+        <field name="model_id" ref="model_van_sales_reconciliation"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_supervisor'))]"/>
+    </record>
+
+    <!-- ================================================================
+         stock.picking scoping.
+
+         The stock module ships NO group-level rule on stock.picking - only a
+         global multi-company one. Group rules are OR-ed and only rules for
+         groups the user actually holds count, so adding the restrictive rule
+         below on its own would silently narrow what an existing Inventory user
+         can see. The third rule restores Inventory's own semantics, and the
+         second keeps supervisors able to see the whole fleet.
+
+           plain Inventory user  -> rule C            -> everything, unchanged
+           salesman              -> rule A            -> their own van
+           supervisor            -> A or B            -> every van transfer
+           van sales admin       -> A or B or C       -> everything
+         ================================================================ -->
+    <record id="stock_picking_van_sales_own_rule" model="ir.rule">
+        <field name="name">Van Sales: own van transfers</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="domain_force">[('van_salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_user'))]"/>
+    </record>
+    <record id="stock_picking_van_sales_all_rule" model="ir.rule">
+        <field name="name">Van Sales Supervisor: all van transfers</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="domain_force">[('van_id', '!=', False)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_supervisor'))]"/>
+    </record>
+    <record id="stock_picking_stock_user_rule" model="ir.rule">
+        <field name="name">Inventory User: all transfers (preserves Inventory behaviour)</field>
+        <field name="model_id" ref="stock.model_stock_picking"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('stock.group_stock_user'))]"/>
+    </record>
+
+</odoo>

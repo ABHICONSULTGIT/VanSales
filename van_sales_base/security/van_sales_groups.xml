@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Odoo 19 note: res.groups no longer carries category_id. Groups attach to
+        a res.groups.privilege, which is what carries the module category and
+        what the user form shows as a single selection.
+    -->
+    <record id="res_groups_privilege_van_sales" model="res.groups.privilege">
+        <field name="name">Van Sales</field>
+        <field name="sequence">25</field>
+        <field name="category_id" ref="base.module_category_supply_chain"/>
+    </record>
+
+    <record id="group_van_sales_user" model="res.groups">
+        <field name="name">User: Own Van Only</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_van_sales"/>
+        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="comment">Field salesman. Sees only the van assigned to them, its routes, and their own visit plans and stops.</field>
+    </record>
+
+    <record id="group_van_sales_supervisor" model="res.groups">
+        <field name="name">Supervisor: All Vans</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_van_sales"/>
+        <field name="implied_ids" eval="[Command.link(ref('group_van_sales_user'))]"/>
+        <field name="comment">Sees every van, route, plan and visit in the company, and can create and correct visit plans for the team.</field>
+    </record>
+
+    <record id="group_van_sales_manager" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_van_sales"/>
+        <field name="implied_ids" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
+        <field name="user_ids" eval="[Command.link(ref('base.user_root')), Command.link(ref('base.user_admin'))]"/>
+        <field name="comment">Configures vans, van stock locations and routes.</field>
+    </record>
+
+</odoo>

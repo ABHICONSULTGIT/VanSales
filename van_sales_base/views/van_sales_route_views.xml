@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_route_view_form" model="ir.ui.view">
+        <field name="name">van.sales.route.form</field>
+        <field name="model">van.sales.route</field>
+        <field name="arch" type="xml">
+            <form string="Route">
+                <header>
+                    <button name="action_create_visit_plan" type="object"
+                            string="Plan Today's Visits" class="btn-primary"
+                            invisible="not van_id or not line_ids"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_visit_plans" type="object"
+                                class="oe_stat_button" icon="fa-calendar">
+                            <span class="o_stat_text">Visit Plans</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. North City Route"/>
+                        </h1>
+                        <label for="code"/>
+                        <h2>
+                            <field name="code" class="oe_inline" placeholder="e.g. R-001"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="active" invisible="1"/>
+                            <field name="route_type" widget="radio"
+                                   options="{'horizontal': True}"/>
+                            <field name="van_id"/>
+                            <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group>
+                            <field name="van_location_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Stops" name="stops">
+                            <field name="line_ids"
+                                   context="{'default_stop_type': route_type}">
+                                <list string="Stops" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="stop_type"/>
+                                    <field name="partner_id"
+                                           invisible="stop_type != 'customer'"
+                                           required="stop_type == 'customer'"/>
+                                    <field name="stop_location_id"
+                                           invisible="stop_type != 'location'"
+                                           required="stop_type == 'location'"/>
+                                    <field name="stop_city" optional="show"/>
+                                    <field name="partner_phone" optional="hide"/>
+                                    <field name="instruction" optional="show"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Internal Notes" name="notes">
+                            <field name="note" placeholder="Notes for the office. Not shown to the salesman."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_route_view_list" model="ir.ui.view">
+        <field name="name">van.sales.route.list</field>
+        <field name="model">van.sales.route</field>
+        <field name="arch" type="xml">
+            <list string="Routes">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="route_type"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                <field name="stop_count" string="Stops"/>
+                <field name="customer_stop_count" string="Customer Stops" optional="hide"/>
+                <field name="location_stop_count" string="Location Stops" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_route_view_search" model="ir.ui.view">
+        <field name="name">van.sales.route.search</field>
+        <field name="model">van.sales.route</field>
+        <field name="arch" type="xml">
+            <search string="Routes">
+                <field name="name" string="Route"
+                       filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id"/>
+                <field name="line_ids" string="Stop"
+                       filter_domain="['|', ('line_ids.partner_id', 'ilike', self), ('line_ids.stop_location_id', 'ilike', self)]"/>
+                <filter name="my_routes" string="My Routes"
+                        domain="[('salesman_user_id', '=', uid)]"/>
+                <filter name="customer_routes" string="Customer Routes"
+                        domain="[('route_type', '=', 'customer')]"/>
+                <filter name="location_routes" string="Location Routes"
+                        domain="[('route_type', '=', 'location')]"/>
+                <separator/>
+                <filter name="unassigned" string="No Van"
+                        domain="[('van_id', '=', False)]"/>
+                <separator/>
+                <filter name="inactive" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_by_route_type" string="Route Type"
+                            context="{'group_by': 'route_type'}"/>
+                    <filter name="group_by_van" string="Van"
+                            context="{'group_by': 'van_id'}"/>
+                    <filter name="group_by_salesman" string="Salesman"
+                            context="{'group_by': 'salesman_user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="van_sales_route_action" model="ir.actions.act_window">
+        <field name="name">Routes</field>
+        <field name="res_model">van.sales.route</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="van_sales_route_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first route
+            </p>
+            <p>
+                A route is the ordered list of stops one van serves. On a
+                Customer Route the stops are known shops; on a Location Route
+                they are places where the van parks and sells to walk-up
+                buyers. Assign the van, add the stops in visiting order, then
+                plan a day's visits from it.
+            </p>
+        </field>
+    </record>
+
+</odoo>

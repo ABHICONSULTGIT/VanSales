@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="van_sales_notification_view_list" model="ir.ui.view">
+        <field name="name">van.sales.notification.list</field>
+        <field name="model">van.sales.notification</field>
+        <field name="arch" type="xml">
+            <list string="Notifications"
+                  decoration-muted="is_read"
+                  decoration-warning="not is_sent">
+                <field name="create_date" string="Created"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="title"/>
+                <field name="notification_type"/>
+                <field name="is_sent"/>
+                <field name="is_read"/>
+                <field name="sent_at" optional="hide"/>
+                <field name="send_error" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_notification_view_form" model="ir.ui.view">
+        <field name="name">van.sales.notification.form</field>
+        <field name="model">van.sales.notification</field>
+        <field name="arch" type="xml">
+            <form string="Notification">
+                <header>
+                    <button name="action_send_now" type="object"
+                            string="Send Now" class="btn-primary"
+                            invisible="is_sent"/>
+                    <button name="action_open_related" type="object"
+                            string="Open Related" invisible="not res_id"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="title" placeholder="Title"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="notification_type"/>
+                            <field name="res_model"/>
+                            <field name="res_id"/>
+                        </group>
+                        <group>
+                            <field name="is_sent"/>
+                            <field name="sent_at"/>
+                            <field name="is_read"/>
+                            <field name="send_error"/>
+                        </group>
+                    </group>
+                    <group string="Body">
+                        <field name="body" nolabel="1"/>
+                    </group>
+                    <group string="Payload">
+                        <field name="data" nolabel="1" widget="text"
+                               placeholder='{"screen": "visit", "visit_id": "12"}'/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_notification_action" model="ir.actions.act_window">
+        <field name="name">Push Notifications</field>
+        <field name="res_model">van.sales.notification</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

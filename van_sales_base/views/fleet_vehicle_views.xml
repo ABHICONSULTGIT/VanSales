@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="fleet_vehicle_view_form_van_sales" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.van.sales</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_van_sales_view_routes" type="object"
+                        class="oe_stat_button" icon="fa-map-signs"
+                        invisible="not is_sales_van">
+                    <field name="van_route_count" widget="statinfo" string="Routes"/>
+                </button>
+                <button name="action_van_sales_view_quants" type="object"
+                        class="oe_stat_button" icon="fa-cubes"
+                        invisible="not van_location_id">
+                    <span class="o_stat_text">Van Stock</span>
+                </button>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="after">
+                <field name="van_setup_incomplete" invisible="1"/>
+                <div class="alert alert-warning" role="alert"
+                     invisible="not van_setup_incomplete">
+                    This van has no stock location yet, so it cannot be put on a
+                    route or hold stock.
+                    <button name="action_van_sales_create_location" type="object"
+                            string="Create Van Stock Location"
+                            class="btn-link p-0 align-baseline"
+                            groups="van_sales_base.group_van_sales_manager"/>
+                </div>
+            </xpath>
+
+            <xpath expr="//field[@name='location']" position="after">
+                <field name="is_sales_van"/>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="Van Sales" name="van_sales"
+                      invisible="not is_sales_van">
+                    <group>
+                        <group string="Stock">
+                            <field name="van_warehouse_id"
+                                   options="{'no_create': True}"/>
+                            <field name="van_location_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="Operation">
+                            <field name="salesman_user_id"
+                                   widget="many2one_avatar_user"/>
+                            <field name="cash_journal_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <field name="van_route_ids" readonly="1">
+                        <list string="Routes">
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="route_type"/>
+                            <field name="stop_count" string="Stops"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="fleet_vehicle_view_list_van_sales" model="ir.ui.view">
+        <field name="name">fleet.vehicle.list.van.sales</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_tree"/>
+        <field name="arch" type="xml">
+            <!-- Appended and hidden by default so Fleet users see no change. -->
+            <xpath expr="//list" position="inside">
+                <field name="is_sales_van" optional="hide"/>
+                <field name="van_warehouse_id" optional="hide"/>
+                <field name="van_location_id" optional="hide"/>
+                <field name="salesman_user_id" widget="many2one_avatar_user" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="fleet_vehicle_view_search_van_sales" model="ir.ui.view">
+        <field name="name">fleet.vehicle.search.van.sales</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="salesman_user_id"/>
+                <filter name="van_sales_vans" string="Sales Vans"
+                        domain="[('is_sales_van', '=', True)]"/>
+                <filter name="van_sales_no_location" string="Missing Van Location"
+                        domain="[('is_sales_van', '=', True), ('van_location_id', '=', False)]"/>
+                <filter name="van_sales_group_by_salesman" string="Van Salesman"
+                        context="{'group_by': 'salesman_user_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="van_sales_van_action" model="ir.actions.act_window">
+        <field name="name">Sales Vans</field>
+        <field name="res_model">fleet.vehicle</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_sales_van', '=', True)]</field>
+        <field name="context">{'default_is_sales_van': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Register your first sales van
+            </p>
+            <p>
+                A sales van is a Fleet vehicle with a stock location, a salesman
+                and a cash journal. Create the vehicle in Fleet, tick
+                "Sales Van", then create its stock location.
+            </p>
+        </field>
+    </record>
+
+</odoo>

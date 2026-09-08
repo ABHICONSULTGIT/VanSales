@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--
+            no_gap, and padding 0. The device number is half of every offline
+            document reference a handset will ever generate, so two devices
+            receiving the same one would produce colliding references in the
+            field. This is the same choice Odoo's Point of Sale makes for its
+            own device sequence.
+        -->
+        <record id="seq_van_sales_device" model="ir.sequence">
+            <field name="name">Van Sales Device Number</field>
+            <field name="code">van.sales.device</field>
+            <field name="prefix"></field>
+            <field name="padding">0</field>
+            <field name="implementation">no_gap</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="param_api_log_enabled" model="ir.config_parameter">
+            <field name="key">van_sales.api_log_enabled</field>
+            <field name="value">True</field>
+        </record>
+        <record id="param_api_log_retention" model="ir.config_parameter">
+            <field name="key">van_sales.api_log_retention_days</field>
+            <field name="value">30</field>
+        </record>
+        <record id="param_api_token_expiry" model="ir.config_parameter">
+            <field name="key">van_sales.api_token_expiry_days</field>
+            <field name="value">30</field>
+        </record>
+        <record id="param_sync_product_limit" model="ir.config_parameter">
+            <field name="key">van_sales.sync_product_limit</field>
+            <field name="value">5000</field>
+        </record>
+        <record id="param_sync_partner_limit" model="ir.config_parameter">
+            <field name="key">van_sales.sync_partner_limit</field>
+            <field name="value">2000</field>
+        </record>
+        <record id="param_sync_history_days" model="ir.config_parameter">
+            <field name="key">van_sales.sync_history_days</field>
+            <field name="value">7</field>
+        </record>
+
+        <record id="cron_cleanup_api_tokens" model="ir.cron">
+            <field name="name">Van Sales: clean up expired API tokens</field>
+            <field name="model_id" ref="model_van_sales_api_token"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_cleanup_expired()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+        </record>
+
+        <record id="cron_cleanup_api_logs" model="ir.cron">
+            <field name="name">Van Sales: clean up old API logs</field>
+            <field name="model_id" ref="model_van_sales_api_log"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_cleanup_old()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+        </record>
+
+        <record id="cron_send_notifications" model="ir.cron">
+            <field name="name">Van Sales: send pending push notifications</field>
+            <field name="model_id" ref="model_van_sales_notification"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_pending()</field>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_visit_view_form_sale" model="ir.ui.view">
+        <field name="name">van.sales.visit.form.sale</field>
+        <field name="model">van.sales.visit</field>
+        <field name="inherit_id" ref="van_sales_base.van_sales_visit_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+                <button name="action_van_sales_new_order" type="object"
+                        string="Sell Here" class="btn-primary"
+                        invisible="state not in ('checked_in', 'done')"/>
+                <button name="action_van_sales_new_collection" type="object"
+                        string="Collect Cash"
+                        invisible="state not in ('checked_in', 'done')"/>
+            </xpath>
+
+            <xpath expr="//sheet" position="inside">
+                <group string="Sales at this stop" name="van_sales_sale"
+                       invisible="sale_order_count == 0 and invoice_count == 0 and collection_count == 0">
+                    <group>
+                        <field name="sale_order_count"/>
+                        <field name="invoice_count"/>
+                        <field name="collection_count"/>
+                    </group>
+                    <group>
+                        <button name="action_van_sales_view_orders" type="object"
+                                string="View Orders" class="btn-link p-0"
+                                invisible="sale_order_count == 0"/>
+                        <button name="action_van_sales_view_invoices" type="object"
+                                string="View Invoices" class="btn-link p-0"
+                                invisible="invoice_count == 0"/>
+                    </group>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

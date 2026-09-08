@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="van_sales_reconciliation_view_form" model="ir.ui.view">
+        <field name="name">van.sales.reconciliation.form</field>
+        <field name="model">van.sales.reconciliation</field>
+        <field name="arch" type="xml">
+            <form string="Van Stock Reconciliation">
+                <header>
+                    <button name="action_generate_lines" type="object"
+                            string="Generate Lines"
+                            invisible="state != 'draft'"/>
+                    <button name="action_apply" type="object"
+                            string="Apply" class="btn-primary"
+                            groups="van_sales_base.group_van_sales_manager"
+                            confirm="This posts an inventory adjustment for every line whose counted quantity differs from the system quantity. Continue?"
+                            invisible="state != 'draft' or line_count == 0"/>
+                    <button name="action_set_return_all" type="object"
+                            string="Return All Counted Stock"
+                            groups="van_sales_base.group_van_sales_manager"
+                            invisible="not can_create_return"/>
+                    <button name="action_create_return_picking" type="object"
+                            string="Create Return Transfer" class="btn-primary"
+                            groups="van_sales_base.group_van_sales_manager"
+                            invisible="not can_create_return or return_qty_total == 0"/>
+                    <button name="action_clear_return" type="object"
+                            string="Keep All On Van"
+                            groups="van_sales_base.group_van_sales_manager"
+                            invisible="not can_create_return or return_qty_total == 0"/>
+                    <button name="action_cancel" type="object"
+                            string="Cancel" invisible="state != 'draft'"/>
+                    <button name="action_draft" type="object"
+                            string="Reset to Draft"
+                            invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_moves" type="object"
+                                class="oe_stat_button" icon="fa-exchange">
+                            <span class="o_stat_text">Movements</span>
+                        </button>
+                        <button name="action_view_return_picking" type="object"
+                                class="oe_stat_button" icon="fa-reply"
+                                invisible="not return_picking_id">
+                            <span class="o_stat_text">Return Transfer</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="van_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="van_location_id"/>
+                            <field name="salesman_user_id"
+                                   widget="many2one_avatar_user"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="date_from" readonly="state != 'draft'"/>
+                            <field name="date_to" readonly="state != 'draft'"/>
+                            <field name="user_id"
+                                   widget="many2one_avatar_user"
+                                   readonly="state != 'draft'"/>
+                            <field name="line_count"/>
+                            <field name="variance_count"/>
+                            <field name="can_create_return" invisible="1"/>
+                            <field name="return_qty_total"
+                                   invisible="state != 'done'"/>
+                            <field name="return_picking_id"
+                                   invisible="not return_picking_id"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="state != 'draft'">
+                        <b>Counted</b> starts at the system quantity, so a line
+                        you do not touch adjusts nothing. Change only what you
+                        actually counted differently.
+                    </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="not can_create_return">
+                        The count is applied and van stock now matches what was
+                        counted. If the van empties overnight, press
+                        <b>Return All Counted Stock</b> and then
+                        <b>Create Return Transfer</b> — the warehouse validates
+                        it on receipt. If stock stays on the van, do nothing.
+                    </div>
+                    <notebook>
+                        <page string="Count" name="count">
+                            <field name="line_ids">
+                                <list string="Lines" editable="bottom"
+                                      create="false" delete="false"
+                                      decoration-danger="difference_qty &lt; 0"
+                                      decoration-warning="difference_qty &gt; 0">
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="product_uom_id" readonly="1"
+                                           groups="uom.group_uom"/>
+                                    <field name="opening_qty" optional="show"/>
+                                    <field name="in_load_qty" optional="show" sum="Loaded"/>
+                                    <field name="in_other_qty" optional="hide"/>
+                                    <field name="out_sale_qty" optional="show" sum="Sold"/>
+                                    <field name="out_return_qty" optional="show" sum="Returned"/>
+                                    <field name="out_adjust_qty" optional="hide"/>
+                                    <field name="out_other_qty" optional="hide"/>
+                                    <field name="expected_qty" readonly="1"/>
+                                    <field name="counted_qty"
+                                           readonly="state != 'draft'"/>
+                                    <field name="difference_qty" readonly="1" sum="Difference"/>
+                                    <field name="return_qty"
+                                           readonly="not return_editable"
+                                           column_invisible="parent.state != 'done'"
+                                           sum="To Return"/>
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="state" column_invisible="True"/>
+                                    <field name="return_editable" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="What happened, who counted, anything the figures do not explain."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="van_sales_reconciliation_view_list" model="ir.ui.view">
+        <field name="name">van.sales.reconciliation.list</field>
+        <field name="model">van.sales.reconciliation</field>
+        <field name="arch" type="xml">
+            <list string="Van Stock Reconciliations"
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="date_to" string="Date"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id" widget="many2one_avatar_user"/>
+                <field name="line_count" string="Lines"/>
+                <field name="variance_count" string="Variances"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-muted="state == 'cancel'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="van_sales_reconciliation_view_search" model="ir.ui.view">
+        <field name="name">van.sales.reconciliation.search</field>
+        <field name="model">van.sales.reconciliation</field>
+        <field name="arch" type="xml">
+            <search string="Van Stock Reconciliations">
+                <field name="name"/>
+                <field name="van_id"/>
+                <field name="salesman_user_id"/>
+                <filter name="mine" string="My Van"
+                        domain="[('salesman_user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="done" string="Applied"
+                        domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_by_van" string="Van"
+                            context="{'group_by': 'van_id'}"/>
+                    <filter name="group_by_salesman" string="Salesman"
+                            context="{'group_by': 'salesman_user_id'}"/>
+                    <filter name="group_by_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_by_date" string="Date"
+                            context="{'group_by': 'date_to'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="van_sales_reconciliation_action" model="ir.actions.act_window">
+        <field name="name">Van Reconciliations</field>
+        <field name="res_model">van.sales.reconciliation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="van_sales_reconciliation_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Reconcile a van's stock
+            </p>
+            <p>
+                Count what is physically on the van and compare it with what
+                Odoo thinks is there, with the loads, sales and returns that
+                explain the difference. Start one from the van's form.
+            </p>
+        </field>
+    </record>
+
+</odoo>
