@@ -142,6 +142,11 @@ def _log_api(response_data, status=200, error_info=None):
 def _json_response(success=True, message=None, data=None, error=None,
                    status=200, pagination=None, extra=None):
     body = {
+        # 'ok' mirrors 'success'. Purely additive: it lets the mobile client
+        # use one success check across both this envelope and the
+        # {ok, data, error} envelope the /api/v1/app/ endpoints answer with.
+        # Nothing that reads 'success' is affected.
+        'ok': success,
         'success': success,
         'message': message,
         'data': data,
