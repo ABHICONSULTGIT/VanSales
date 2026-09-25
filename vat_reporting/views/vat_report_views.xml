@@ -1,0 +1,245 @@
+<odoo>
+
+    <record id="view_vat_report_list" model="ir.ui.view">
+        <field name="name">vat.report.list</field>
+        <field name="model">vat.report</field>
+        <field name="arch" type="xml">
+            <list string="VAT Reports">
+                <field name="reference"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="invoice_type"/>
+                <field name="quarter"/>
+                <field name="year"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-info="state == 'processing'"
+                       decoration-muted="state == 'draft'"/>
+                <field name="total_amount" sum="Total"/>
+                <field name="total_vat_amount" sum="Total VAT"/>
+                <field name="total_amount_incl" sum="Total Incl. VAT"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vat_report_form" model="ir.ui.view">
+        <field name="name">vat.report.form</field>
+        <field name="model">vat.report</field>
+        <field name="arch" type="xml">
+            <form string="VAT Report">
+                <header>
+                    <button name="action_extract_invoices" type="object"
+                            string="Upload &amp; Extract" class="oe_highlight"/>
+                    <button name="action_refresh_jobs" type="object"
+                            string="Refresh Job Status"
+                            invisible="pending_job_count == 0"/>
+                    <button name="action_retry_failed_jobs" type="object"
+                            string="Retry Failed Jobs"
+                            invisible="failed_job_count == 0"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,processing,done"/>
+                </header>
+                <sheet>
+                    <field name="pending_job_count" invisible="1"/>
+                    <field name="failed_job_count" invisible="1"/>
+                    <!-- Auto-polling banner: visible while jobs are processing -->
+                    <div class="alert alert-info d-flex align-items-center gap-2 mb-3"
+                         role="alert"
+                         invisible="pending_job_count == 0">
+                        <i class="fa fa-spinner fa-spin me-2"/>
+                        <span>
+                            <strong>Extracting invoice data…</strong>
+                            The system is automatically checking job status every minute.
+                            Invoice lines will appear here once processing is complete.
+                            You can also click <strong>Refresh Job Status</strong> to check immediately.
+                        </span>
+                    </div>
+                    <!-- Failed jobs banner -->
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-3"
+                         role="alert"
+                         invisible="failed_job_count == 0">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <span>
+                            <strong>Some jobs failed.</strong>
+                            Click <strong>Retry Failed Jobs</strong> to re-submit them.
+                        </span>
+                    </div>
+                    <div class="oe_title">
+                        <label for="reference" string="Reference Number"/>
+                        <h1>
+                            <field name="reference" readonly="1" placeholder="Generated automatically"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="VAT Period">
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="quarter"/>
+                            <field name="year"/>
+                            <field name="invoice_type"/>
+                        </group>
+                        <group string="Bills">
+                            <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
+                        </group>
+                    </group>
+
+                    <!-- ── Invoice Line Search Bar ──────────────────────────────── -->
+                    <group string="Search Invoice Lines" col="5">
+                        <field name="line_search_date"
+                               nolabel="1"
+                               placeholder="Date"/>
+                        <field name="line_search_invoice"
+                               nolabel="1"
+                               placeholder="Invoice number…"/>
+                        <field name="line_search_supplier"
+                               nolabel="1"
+                               placeholder="Supplier name…"/>
+                        <button name="action_apply_search"
+                                type="object"
+                                string="🔍 Search"
+                                class="btn-primary"/>
+                        <button name="action_clear_search"
+                                type="object"
+                                string="✕ Clear"
+                                class="btn-secondary"
+                                invisible="not line_search_date and not line_search_invoice and not line_search_supplier"/>
+                    </group>
+                    <!-- ── End Search Bar ───────────────────────────────────────── -->
+
+                    <notebook>
+                        <page string="Sales" name="sales_lines">
+                            <field name="sales_line_ids"
+                                   domain="[('invoice_type', 'in', ('sales_invoice', 'sales_return'))] + ([('date', '=', line_search_date)] if line_search_date else []) + ([('invoice_number', 'ilike', line_search_invoice)] if line_search_invoice else []) + ([('supplier', 'ilike', line_search_supplier)] if line_search_supplier else [])"
+                                   context="{'default_invoice_type': 'sales_invoice'}">
+                                <list editable="bottom" decoration-danger="parse_warning == True">
+                                    <field name="parse_warning" column_invisible="1"/>
+                                    <field name="invoice_type"/>
+                                    <field name="date"/>
+                                    <field name="invoice_number"/>
+                                    <field name="supplier"/>
+                                    <field name="supplier_vat"/>
+                                    <field name="total_amount" sum="Total"/>
+                                    <field name="vat_amount" sum="Total VAT"/>
+                                    <field name="total_including_vat" sum="Total Incl. VAT"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Purchase" name="purchase_lines">
+                            <field name="purchase_line_ids"
+                                   domain="[('invoice_type', 'in', ('purchase_invoice', 'purchase_return'))] + ([('date', '=', line_search_date)] if line_search_date else []) + ([('invoice_number', 'ilike', line_search_invoice)] if line_search_invoice else []) + ([('supplier', 'ilike', line_search_supplier)] if line_search_supplier else [])"
+                                   context="{'default_invoice_type': 'purchase_invoice'}">
+                                <list editable="bottom" decoration-danger="parse_warning == True">
+                                    <field name="parse_warning" column_invisible="1"/>
+                                    <field name="invoice_type"/>
+                                    <field name="date"/>
+                                    <field name="invoice_number"/>
+                                    <field name="supplier"/>
+                                    <field name="supplier_vat"/>
+                                    <field name="total_amount" sum="Total"/>
+                                    <field name="vat_amount" sum="Total VAT"/>
+                                    <field name="total_including_vat" sum="Total Incl. VAT"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Correction" name="correction_lines">
+                            <field name="correction_line_ids">
+                                <list editable="bottom" decoration-danger="parse_warning == True">
+                                    <field name="parse_warning" column_invisible="1"/>
+                                    <field name="invoice_type"/>
+                                    <field name="date"/>
+                                    <field name="invoice_number"/>
+                                    <field name="supplier"/>
+                                    <field name="supplier_vat"/>
+                                    <field name="total_amount" sum="Total"/>
+                                    <field name="vat_amount" sum="Total VAT"/>
+                                    <field name="total_including_vat" sum="Total Incl. VAT"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Extraction Jobs" name="extraction_jobs">
+                            <field name="job_ids">
+                                <list>
+                                    <field name="filename"/>
+                                    <field name="job_id"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'completed'"
+                                           decoration-danger="status == 'failed'"
+                                           decoration-info="status in ('queued', 'processing')"/>
+                                    <field name="progress" widget="progressbar"/>
+                                    <field name="results_fetched" string="Lines Fetched"/>
+                                    <field name="error_message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="total_amount"/>
+                        <field name="total_vat_amount"/>
+                        <field name="total_amount_incl" class="oe_subtotal_footer_separator"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search view for vat.report.line -->
+    <record id="view_vat_report_line_search" model="ir.ui.view">
+        <field name="name">vat.report.line.search</field>
+        <field name="model">vat.report.line</field>
+        <field name="arch" type="xml">
+            <search string="Search Invoice Lines">
+                <field name="invoice_number" string="Invoice Number"/>
+                <field name="supplier" string="Supplier"/>
+                <field name="date" string="Date"/>
+                <filter string="Needs Review" name="filter_warning"
+                        domain="[('parse_warning', '=', True)]"/>
+                <separator/>
+                <filter string="Group by Supplier" name="group_supplier"
+                        context="{'group_by': 'supplier'}"/>
+                <filter string="Group by Date" name="group_date"
+                        context="{'group_by': 'date'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_vat_report_search" model="ir.ui.view">
+        <field name="name">vat.report.search</field>
+        <field name="model">vat.report</field>
+        <field name="arch" type="xml">
+            <search string="VAT Reports">
+                <field name="reference"/>
+                <field name="company_id"/>
+                <field name="invoice_type"/>
+                <field name="quarter"/>
+                <field name="year"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Processing" name="filter_processing" domain="[('state', '=', 'processing')]"/>
+                <filter string="Done" name="filter_done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter string="Invoice Type" name="group_invoice_type" context="{'group_by': 'invoice_type'}"/>
+                <filter string="Quarter" name="group_quarter" context="{'group_by': 'quarter'}"/>
+                <filter string="Year" name="group_year" context="{'group_by': 'year'}"/>
+                <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vat_report" model="ir.actions.act_window">
+        <field name="name">VAT Reports</field>
+        <field name="res_model">vat.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vat_report_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first VAT report
+            </p>
+            <p>
+                Click "New", pick the company and quarter, upload your bills,
+                then use "Upload &amp; Extract" to let the API fill in the
+                invoice lines automatically.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,26 @@
+<odoo>
+
+    <menuitem id="menu_vat_reporting_root"
+              name="VAT Reporting"
+              sequence="10"
+              action="action_vat_report"
+              web_icon="vat_reporting,static/description/icon.png"/>
+
+    <menuitem id="menu_vat_reporting_reports"
+              name="VAT Reports"
+              parent="menu_vat_reporting_root"
+              action="action_vat_report"
+              sequence="10"/>
+
+    <menuitem id="menu_vat_reporting_config"
+              name="Configuration"
+              parent="menu_vat_reporting_root"
+              sequence="100"/>
+
+    <menuitem id="menu_vat_reporting_config_settings"
+              name="API Settings"
+              parent="menu_vat_reporting_config"
+              action="action_vat_report_config"
+              sequence="10"/>
+
+</odoo>

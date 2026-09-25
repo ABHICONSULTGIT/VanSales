@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_vat_report_user,vat.report.user,model_vat_report,base.group_user,1,1,1,1
+access_vat_report_line_user,vat.report.line.user,model_vat_report_line,base.group_user,1,1,1,1
+access_vat_report_job_user,vat.report.job.user,model_vat_report_job,base.group_user,1,1,1,1
+access_vat_report_config_user,vat.report.config.user,model_vat_report_config,base.group_user,1,1,1,1

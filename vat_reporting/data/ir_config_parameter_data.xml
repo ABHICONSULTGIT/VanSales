@@ -1,0 +1,13 @@
+<odoo noupdate="1">
+
+    <record id="param_vat_reporting_api_base_url" model="ir.config_parameter">
+        <field name="key">vat_reporting.api_base_url</field>
+        <field name="value">http://20.244.85.207:9005</field>
+    </record>
+
+    <record id="param_vat_reporting_api_token" model="ir.config_parameter">
+        <field name="key">vat_reporting.api_token</field>
+        <field name="value">VINNO-CA-11</field>
+    </record>
+
+</odoo>
