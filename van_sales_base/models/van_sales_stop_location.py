@@ -92,7 +92,7 @@ class VanSalesStopLocation(models.Model):
             'type': 'ir.actions.act_window',
             'name': _("Visits"),
             'res_model': 'van.sales.visit',
-            'view_mode': 'list,form',
+            # List only: visits are edited inside their visit plan.
+            'view_mode': 'list',
             'domain': [('stop_location_id', '=', self.id)],
-            'context': {'default_stop_location_id': self.id},
         }

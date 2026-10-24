@@ -17,11 +17,12 @@ class SaleOrder(models.Model):
              "stock instead of the warehouse.")
     van_route_id = fields.Many2one(
         comodel_name='van.sales.route', string="Route",
-        index='btree_not_null', check_company=True)
+        index='btree_not_null', check_company=True, copy=False)
     van_visit_id = fields.Many2one(
         comodel_name='van.sales.visit', string="Visit",
-        index='btree_not_null', check_company=True,
-        help="The customer stop this order was taken at.")
+        index='btree_not_null', check_company=True, copy=False,
+        help="The line of the salesman's visit plan this order belongs to. "
+             "Set automatically when the order is created.")
     van_salesman_user_id = fields.Many2one(
         comodel_name='res.users', string="Van Salesman",
         related='van_id.salesman_user_id', store=True,
@@ -47,6 +48,89 @@ class SaleOrder(models.Model):
         'UNIQUE(van_client_uuid)',
         "An order with this client reference already exists.",
     )
+
+    # --------------------------------------------------------------------
+    # The salesman's van, and his visit plan for the day
+    # --------------------------------------------------------------------
+    @api.onchange('user_id')
+    def _onchange_user_id_van_sales(self):
+        """The van follows the salesperson."""
+        van = self.env['fleet.vehicle']._van_sales_van_of(self.user_id)
+        if van and self._van_sales_van_fits(van):
+            self.van_id = van
+
+    def _van_sales_van_fits(self, van):
+        """A van of another company cannot go on this order."""
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        return not van.company_id or van.company_id == company
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # A van left out of the values is filled in from the salesperson. A van
+        # explicitly cleared (the salesperson emptied it on the form to ship
+        # this one order from the warehouse) is respected.
+        van_cleared = [('van_id' in vals and not vals['van_id'])
+                       for vals in vals_list]
+        orders = super().create(vals_list)
+        orders._van_sales_attach_to_plan(
+            orders.browse(o.id for o, cleared in zip(orders, van_cleared)
+                          if cleared))
+        return orders
+
+    def _van_sales_attach_to_plan(self, van_cleared=None):
+        """Put every new order on its salesman's visit plan for the day.
+
+        * No plan for that salesman and day yet: one is created.
+        * The customer is on the plan with no order yet (a route stop): the
+          order is linked to that line.
+        * Otherwise (off the route, or a second order for the same customer):
+          a new line is added.
+
+        Only for a salesman who drives a sales van - any other order is left
+        alone. An order raised from a visit already carries its visit.
+
+        sudo: the order may be keyed in by an office user with no Van Sales
+        rights; the plan and its lines are bookkeeping, not something that
+        user is choosing to edit.
+        """
+        Vehicle = self.env['fleet.vehicle']
+        Plan = self.env['van.sales.visit.plan']
+        van_cleared = van_cleared or self.browse()
+        for order in self.sudo():
+            user = order.user_id
+            if not user or not order.partner_id:
+                continue
+            if not order.van_id:
+                if order in van_cleared:
+                    continue
+                van = Vehicle._van_sales_van_of(user)
+                if not van or not order._van_sales_van_fits(van):
+                    continue
+                order.van_id = van
+            if order.van_visit_id or order.van_id.salesman_user_id != user:
+                continue
+            date = fields.Date.context_today(order, order.date_order)
+            plan = Plan._van_sales_get_or_create(user, date, order.company_id)
+            if not plan or plan.company_id != order.company_id:
+                continue
+            customer = order.partner_id.commercial_partner_id
+            visit = plan.visit_ids.filtered(
+                lambda v: v.partner_id
+                and v.partner_id.commercial_partner_id == customer
+                and not v.sale_order_id,
+            ).sorted(lambda v: (v.sequence, v.id))[:1]
+            if not visit:
+                visit = self.env['van.sales.visit'].sudo().create({
+                    'plan_id': plan.id,
+                    'sequence': max(plan.visit_ids.mapped('sequence'),
+                                    default=0) + 10,
+                    'partner_id': order.partner_id.id,
+                })
+            values = {'van_visit_id': visit.id}
+            if plan.route_id and not order.van_route_id:
+                values['van_route_id'] = plan.route_id.id
+            order.write(values)
 
     # --------------------------------------------------------------------
     # Van checks, applied at confirmation
@@ -156,14 +240,17 @@ class SaleOrder(models.Model):
     # --------------------------------------------------------------------
     # Actions
     # --------------------------------------------------------------------
-    def action_van_sales_view_visit(self):
+    def action_van_sales_view_visit_plan(self):
+        """Visits are edited inside their plan, so open the plan."""
         self.ensure_one()
+        if not self.van_visit_id:
+            raise UserError(_("%s is not on a visit plan.", self.display_name))
         return {
             'type': 'ir.actions.act_window',
-            'name': _("Visit"),
-            'res_model': 'van.sales.visit',
+            'name': _("Visit Plan"),
+            'res_model': 'van.sales.visit.plan',
             'view_mode': 'form',
-            'res_id': self.van_visit_id.id,
+            'res_id': self.van_visit_id.plan_id.id,
         }
 
 

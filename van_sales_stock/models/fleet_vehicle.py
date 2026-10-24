@@ -1,51 +1,14 @@
 # Part of the Van Sales project.
 
-from odoo import _, api, fields, models
+from odoo import _, models
 from odoo.exceptions import UserError
 
 
 class FleetVehicle(models.Model):
     _inherit = 'fleet.vehicle'
 
-    van_picking_ids = fields.One2many(
-        comodel_name='stock.picking', inverse_name='van_id',
-        string="Van Transfers")
-    van_pending_picking_count = fields.Integer(
-        string="Pending Transfers", compute='_compute_van_picking_counts')
-    van_picking_count = fields.Integer(
-        string="Transfers", compute='_compute_van_picking_counts')
-    van_reconciliation_count = fields.Integer(
-        string="Reconciliations", compute='_compute_van_reconciliation_count')
-
     # --------------------------------------------------------------------
-    # Compute
-    # --------------------------------------------------------------------
-    def _compute_van_picking_counts(self):
-        totals, pending = {}, {}
-        if self.ids:
-            for van, count in self.env['stock.picking']._read_group(
-                    [('van_id', 'in', self.ids)], ['van_id'], ['__count']):
-                totals[van.id] = count
-            for van, count in self.env['stock.picking']._read_group(
-                    [('van_id', 'in', self.ids),
-                     ('state', 'not in', ('done', 'cancel'))],
-                    ['van_id'], ['__count']):
-                pending[van.id] = count
-        for vehicle in self:
-            vehicle.van_picking_count = totals.get(vehicle.id, 0)
-            vehicle.van_pending_picking_count = pending.get(vehicle.id, 0)
-
-    def _compute_van_reconciliation_count(self):
-        counts = {}
-        if self.ids:
-            for van, count in self.env['van.sales.reconciliation']._read_group(
-                    [('van_id', 'in', self.ids)], ['van_id'], ['__count']):
-                counts[van.id] = count
-        for vehicle in self:
-            vehicle.van_reconciliation_count = counts.get(vehicle.id, 0)
-
-    # --------------------------------------------------------------------
-    # Stock service - consumed by the sales module later
+    # Stock service - consumed by the sales module
     # --------------------------------------------------------------------
     def _van_sales_available_quantities(self, products=None):
         """On-hand quantity per product in this van's location.
@@ -77,11 +40,9 @@ class FleetVehicle(models.Model):
     def _van_sales_check_quantity(self, product, quantity, uom=None):
         """Verdict on selling ``quantity`` of ``product`` from this van.
 
-        Odoo 19 has no negative-stock setting anywhere - there is no
-        ``allow_negative_stock`` field on the product, the category, the
-        location or the company - so this is the only control over selling more
-        than the van carries. The policy comes from the product, falling back
-        to its category.
+        Odoo 19 has no negative-stock setting anywhere, so this is the only
+        control over selling more than the van carries. The policy comes from
+        the product, falling back to its category.
 
         :return: dict with
                  ``ok`` - True when the van carries enough;
@@ -107,18 +68,15 @@ class FleetVehicle(models.Model):
         }
 
     # --------------------------------------------------------------------
-    # Actions
+    # Load / return - standard internal transfers
     # --------------------------------------------------------------------
     def _van_sales_internal_picking_type(self):
         """The warehouse's internal operation type, with a clear failure."""
         self.ensure_one()
-        warehouse = self.van_warehouse_id or self.env['stock.warehouse'].search(
-            [('company_id', '=', (self.company_id or self.env.company).id)],
-            limit=1)
+        warehouse = self._van_sales_resolve_warehouse()
         if not warehouse:
             raise UserError(_(
-                "No warehouse is set on van %s and none could be found for "
-                "its company.", self.display_name))
+                "No warehouse could be found for van %s.", self.display_name))
         picking_type = warehouse.with_context(active_test=False).int_type_id
         if not picking_type:
             raise UserError(_(
@@ -136,7 +94,7 @@ class FleetVehicle(models.Model):
         self.ensure_one()
         if not self.is_sales_van:
             raise UserError(_(
-                "%s is not marked as a sales van.", self.display_name))
+                "%s is not a sales van.", self.display_name))
         if not self.van_location_id:
             raise UserError(_(
                 "%s has no van stock location yet.", self.display_name))
@@ -177,30 +135,8 @@ class FleetVehicle(models.Model):
             },
         }
 
-    def action_van_sales_view_pickings(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Van Transfers"),
-            'res_model': 'stock.picking',
-            'view_mode': 'list,form',
-            'domain': [('van_id', '=', self.id)],
-            'context': {'default_van_id': self.id},
-        }
-
-    def action_van_sales_view_reconciliations(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Van Reconciliations"),
-            'res_model': 'van.sales.reconciliation',
-            'view_mode': 'list,form',
-            'domain': [('van_id', '=', self.id)],
-            'context': {'default_van_id': self.id},
-        }
-
     def action_van_sales_new_reconciliation(self):
-        """Start today's reconciliation for this van, stops pre-loaded."""
+        """Start a stock count of this van, lines pre-loaded."""
         self.ensure_one()
         self._van_sales_check_ready()
         reconciliation = self.env['van.sales.reconciliation'].create({

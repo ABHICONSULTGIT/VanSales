@@ -39,31 +39,9 @@
          Own-van scoping. Group rules are OR-ed, so the supervisor's
          unrestricted rule widens what the restrictive user rule allows.
          ================================================================ -->
-    <record id="van_sales_route_own_rule" model="ir.rule">
-        <field name="name">Van Sales Route: own van only</field>
-        <field name="model_id" ref="model_van_sales_route"/>
-        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
-        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
-    </record>
-    <record id="van_sales_route_all_rule" model="ir.rule">
-        <field name="name">Van Sales Route: all vans</field>
-        <field name="model_id" ref="model_van_sales_route"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
-    </record>
-
-    <record id="van_sales_route_line_own_rule" model="ir.rule">
-        <field name="name">Van Sales Route Customer: own van only</field>
-        <field name="model_id" ref="model_van_sales_route_line"/>
-        <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
-        <field name="groups" eval="[Command.link(ref('group_van_sales_user'))]"/>
-    </record>
-    <record id="van_sales_route_line_all_rule" model="ir.rule">
-        <field name="name">Van Sales Route Customer: all vans</field>
-        <field name="model_id" ref="model_van_sales_route_line"/>
-        <field name="domain_force">[(1, '=', 1)]</field>
-        <field name="groups" eval="[Command.link(ref('group_van_sales_supervisor'))]"/>
-    </record>
+    <!-- Routes and their stops carry no salesman: a route is a template
+         handed to a salesman on his visit plan. Only the company rule
+         above applies to them. -->
 
     <record id="van_sales_visit_plan_own_rule" model="ir.rule">
         <field name="name">Van Sales Visit Plan: own plans only</field>

@@ -31,19 +31,6 @@ class FleetVehicle(models.Model):
         readonly=True, copy=False, index='btree_not_null',
         help="Route whose rule ships this van's sales out of its own stock "
              "location instead of the warehouse.")
-    van_sale_order_ids = fields.One2many(
-        comodel_name='sale.order', inverse_name='van_id', string="Van Orders")
-    van_sale_order_count = fields.Integer(
-        string="Orders", compute='_compute_van_sale_order_count')
-
-    def _compute_van_sale_order_count(self):
-        counts = {}
-        if self.ids:
-            for van, count in self.env['sale.order']._read_group(
-                    [('van_id', 'in', self.ids)], ['van_id'], ['__count']):
-                counts[van.id] = count
-        for vehicle in self:
-            vehicle.van_sale_order_count = counts.get(vehicle.id, 0)
 
     # --------------------------------------------------------------------
     # Provisioning
@@ -153,17 +140,3 @@ class FleetVehicle(models.Model):
         if vals.get('is_sales_van') or 'van_location_id' in vals:
             self._van_sales_autoprovision_route()
         return result
-
-    # --------------------------------------------------------------------
-    # Actions
-    # --------------------------------------------------------------------
-    def action_van_sales_view_orders(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Van Orders"),
-            'res_model': 'sale.order',
-            'view_mode': 'list,form',
-            'domain': [('van_id', '=', self.id)],
-            'context': {'default_van_id': self.id},
-        }

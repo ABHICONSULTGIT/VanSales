@@ -1,42 +1,33 @@
 # Part of the Van Sales project.
 {
     'name': "Van Sales - Base",
-    'summary': "Van, route and visit master data for route-based van sales",
+    'summary': "Sales vans, optional routes and daily visit plans",
     'description': """
 Van Sales - Base
 ================
 
-Foundation module of the Van Sales suite. It provides the master data every
-other van sales module builds on:
+Foundation of the Van Sales suite. A salesman and his van are the base;
+everything else is optional.
 
-* **Van master** - extends ``fleet.vehicle`` rather than duplicating it. Adds
-  the van's stock location, its salesman, its cash journal and its routes.
-* **Van stock location provisioning** - a wizard that creates one internal
-  child location per van under a warehouse. Deliberately *not* one warehouse
-  per van: a warehouse would create eight picking types and eight sequences
-  each, and gives nothing a child internal location does not.
-* **Routes** - an ordered list of customers served by a van.
-* **Daily visit plans and visits** - check in / check out with GPS capture and
-  visit duration.
-* **Security** - three roles (User / Supervisor / Administrator) with record
-  rules scoping a salesman to their own van.
-
-Deliberately out of scope in this module: visit frequency scheduling
-(pending confirmation of the frequency model from the client), van stock
-operations, the order-to-cash flow and the mobile synchronisation API.
-Those live in the later modules of the suite.
+* **Sales vans** - a ``fleet.vehicle`` with a salesman and a stock location.
+  The location is created automatically when the van is saved.
+* **Routes** - an optional, reusable list of stops: customers, stop locations,
+  or a customer at a stop location. A guideline, never a restriction.
+* **Visit plans** - one salesman's day. A route can be given to it as a
+  checklist; every sale he makes that day lands on it regardless.
+* **Security** - three roles (User / Supervisor / Administrator), with record
+  rules scoping a salesman to his own van, plans and visits.
 """,
     'author': "BizTech Computers",
     'website': "https://biztechbh.biz/",
     'category': 'Inventory/Van Sales',
-    'version': '19.0.1.2.0',
+    'version': '19.0.2.0.0',
     'license': 'OPL-1',
     'depends': [
         'base',
         'mail',
         'stock',
         'fleet',
-        'account',
     ],
     'data': [
         'security/van_sales_groups.xml',

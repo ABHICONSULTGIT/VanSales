@@ -98,10 +98,9 @@ class VanSalesVanLocationWizard(models.TransientModel):
         for vehicle in todo:
             vehicle._van_sales_provision_location(warehouse=self.warehouse_id)
 
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Sales Vans"),
-            'res_model': 'fleet.vehicle',
-            'view_mode': 'list,form',
-            'domain': [('id', 'in', self.vehicle_ids.ids)],
-        }
+        # Reopen in the Sales Van views, not Fleet's - the provisioned vehicles
+        # are sales vans now.
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'van_sales_base.van_sales_van_action')
+        action['domain'] = [('id', 'in', self.vehicle_ids.ids)]
+        return action

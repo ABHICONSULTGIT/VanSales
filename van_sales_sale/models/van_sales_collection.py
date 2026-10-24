@@ -87,11 +87,7 @@ class VanSalesCollection(models.Model):
     # --------------------------------------------------------------------
     @api.model
     def _default_journal_id(self):
-        van_id = self.env.context.get('default_van_id')
-        if van_id:
-            van = self.env['fleet.vehicle'].browse(van_id)
-            if van.cash_journal_id:
-                return van.cash_journal_id
+        """The company's cash journal. The salesman can pick a bank one."""
         return self.env['account.journal'].search([
             ('type', '=', 'cash'),
             ('company_id', '=', self.env.company.id),
@@ -114,11 +110,6 @@ class VanSalesCollection(models.Model):
     def _compute_payment_count(self):
         for record in self:
             record.payment_count = len(record.payment_ids)
-
-    @api.onchange('van_id')
-    def _onchange_van_id(self):
-        if self.van_id.cash_journal_id and self.state == 'draft':
-            self.journal_id = self.van_id.cash_journal_id
 
     # --------------------------------------------------------------------
     # ORM

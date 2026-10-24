@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_van_sales_api_token_cleanup" model="ir.cron">
+        <field name="name">Van Sales API: remove expired tokens</field>
+        <field name="model_id" ref="model_van_sales_api_token"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_cleanup_expired()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+</odoo>

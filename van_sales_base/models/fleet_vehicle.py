@@ -7,43 +7,22 @@ from odoo.exceptions import UserError, ValidationError
 class FleetVehicle(models.Model):
     """Van sales extension of the standard fleet vehicle.
 
-    A sales van is a ``fleet.vehicle``, not a separate record. Fleet already
-    carries the plate, model, driver and maintenance history; duplicating it
-    would mean two records per van and a join on every query.
+    A sales van is a ``fleet.vehicle`` with two things added: the salesman who
+    drives it and the stock location it carries. Nothing else - routes, plans
+    and orders point at the van, not the other way round.
 
-    Note that the salesman is a ``res.users``, not fleet's own ``driver_id``:
-    ``driver_id`` points at ``res.partner`` and therefore cannot be used to
-    scope access, record rules or documents.
+    The salesman is a ``res.users``, not Fleet's own ``driver_id``:
+    ``driver_id`` points at ``res.partner`` and therefore cannot scope access,
+    record rules or documents.
     """
 
     _inherit = 'fleet.vehicle'
 
+    # Technical flag, never shown on a form. It is what separates sales vans
+    # from the company's other Fleet vehicles: the Sales Van menu filters on it
+    # and sets it on every vehicle created there.
     is_sales_van = fields.Boolean(
-        string="Sales Van",
-        default=False,
-        tracking=True,
-        help="Tick this on vehicles that carry stock and sell on a route. It "
-             "keeps van sales logic away from the company's other vehicles, "
-             "which also live in Fleet.")
-    van_warehouse_id = fields.Many2one(
-        comodel_name='stock.warehouse',
-        string="Loading Warehouse",
-        default=lambda self: self._default_van_warehouse_id(),
-        tracking=True,
-        help="Warehouse this van loads from. Its stock location is created "
-             "under this warehouse, and later modules raise the loading "
-             "transfers from it.")
-    van_location_id = fields.Many2one(
-        comodel_name='stock.location',
-        string="Van Stock Location",
-        domain="[('usage', '=', 'internal')]",
-        copy=False,
-        tracking=True,
-        index='btree_not_null',
-        help="Internal stock location holding this van's stock. Every "
-             "availability check and reconciliation runs off this location, "
-             "so it - not the vehicle - is the authoritative anchor. If a van "
-             "is swapped mid-route the location stays put.")
+        string="Sales Van", default=False, copy=False)
     salesman_user_id = fields.Many2one(
         comodel_name='res.users',
         string="Van Salesman",
@@ -51,30 +30,20 @@ class FleetVehicle(models.Model):
         copy=False,
         tracking=True,
         index='btree_not_null',
-        help="The salesman operating this van. This is an Odoo user, so it can "
-             "scope access rights and stamp documents.")
-    cash_journal_id = fields.Many2one(
-        comodel_name='account.journal',
-        string="Cash Journal",
-        domain="[('type', 'in', ('cash', 'bank'))]",
+        help="The salesman operating this van. His sale orders ship from this "
+             "van's stock and land on his daily visit plan.")
+    van_location_id = fields.Many2one(
+        comodel_name='stock.location',
+        string="Van Stock Location",
+        domain="[('usage', '=', 'internal')]",
         copy=False,
         tracking=True,
-        help="Journal the cash collected on this van is posted to.")
-    van_route_ids = fields.One2many(
-        comodel_name='van.sales.route',
-        inverse_name='van_id',
-        string="Routes")
-    van_route_count = fields.Integer(
-        string="Routes",
-        compute='_compute_van_route_count')
-    van_setup_incomplete = fields.Boolean(
-        string="Van Setup Incomplete",
-        compute='_compute_van_setup_incomplete',
-        help="Technical field driving the setup warning on the vehicle form.")
+        index='btree_not_null',
+        help="Internal stock location holding this van's stock. Created "
+             "automatically when the van is saved.")
 
-    # A stock location can back at most one active sales van. Enforced as a
-    # partial unique index rather than a Python constraint so it also holds
-    # against concurrent writes and direct SQL.
+    # A stock location can back at most one active sales van. A partial unique
+    # index, so it also holds against concurrent writes and direct SQL.
     _van_location_uniq = models.UniqueIndex(
         "(van_location_id) WHERE van_location_id IS NOT NULL"
         " AND is_sales_van IS TRUE AND active IS TRUE",
@@ -84,32 +53,23 @@ class FleetVehicle(models.Model):
     )
 
     # --------------------------------------------------------------------
-    # Defaults
+    # Warehouse
     # --------------------------------------------------------------------
-    @api.model
-    def _default_van_warehouse_id(self):
-        """First warehouse of the active company.
+    def _van_sales_resolve_warehouse(self, warehouse=False):
+        """The warehouse this van belongs to.
 
-        A visible default on the form, not a hidden rule: the user sees the
-        warehouse before saving and can change it. With several warehouses the
-        first one is a starting point, not a decision made behind their back.
+        Not stored on the van: the van's stock location already lives under a
+        warehouse, and ``stock.location.warehouse_id`` says which. Before the
+        location exists (at creation), the company's first warehouse is used.
         """
+        self.ensure_one()
+        if warehouse:
+            return warehouse
+        if self.van_location_id.warehouse_id:
+            return self.van_location_id.warehouse_id
+        company = self.company_id or self.env.company
         return self.env['stock.warehouse'].search(
-            [('company_id', '=', self.env.company.id)], limit=1)
-
-    # --------------------------------------------------------------------
-    # Compute
-    # --------------------------------------------------------------------
-    @api.depends('van_route_ids')
-    def _compute_van_route_count(self):
-        for vehicle in self:
-            vehicle.van_route_count = len(vehicle.van_route_ids)
-
-    @api.depends('is_sales_van', 'van_location_id')
-    def _compute_van_setup_incomplete(self):
-        for vehicle in self:
-            vehicle.van_setup_incomplete = bool(
-                vehicle.is_sales_van and not vehicle.van_location_id)
+            [('company_id', '=', company.id)], limit=1)
 
     # --------------------------------------------------------------------
     # Van stock location provisioning
@@ -138,16 +98,6 @@ class FleetVehicle(models.Model):
             name = "%s (%s)" % (name, self.id)
         return name
 
-    def _van_sales_resolve_warehouse(self, warehouse=False):
-        self.ensure_one()
-        if warehouse:
-            return warehouse
-        if self.van_warehouse_id:
-            return self.van_warehouse_id
-        company = self.company_id or self.env.company
-        return self.env['stock.warehouse'].search(
-            [('company_id', '=', company.id)], limit=1)
-
     def _van_sales_provision_location(self, warehouse=False):
         """Create and assign this van's stock location.
 
@@ -171,10 +121,10 @@ class FleetVehicle(models.Model):
             'location_id': parent.id,
             'company_id': (self.company_id or warehouse.company_id).id,
         })
-        values = {'van_location_id': location.id, 'is_sales_van': True}
-        if not self.van_warehouse_id:
-            values['van_warehouse_id'] = warehouse.id
-        self.with_context(van_sales_no_autoprovision=True).write(values)
+        self.with_context(van_sales_no_autoprovision=True).write({
+            'van_location_id': location.id,
+            'is_sales_van': True,
+        })
         self.message_post(body=_(
             "Van stock location %s created.", location.display_name))
         return location
@@ -240,15 +190,13 @@ class FleetVehicle(models.Model):
                     usage=location.usage,
                 ))
 
-    @api.constrains('company_id', 'van_location_id', 'salesman_user_id',
-                    'cash_journal_id', 'van_warehouse_id')
+    @api.constrains('company_id', 'van_location_id', 'salesman_user_id')
     def _check_van_company(self):
-        """Company consistency.
+        """Company consistency of the two fields this module adds.
 
         ``fleet.vehicle`` does not set ``_check_company_auto``, and turning it
-        on here would change behaviour for every existing fleet field. So the
-        check is written out explicitly for the fields this module adds.
-        A vehicle with no company is shared and passes.
+        on here would change behaviour for every existing fleet field. A
+        vehicle with no company is shared and passes.
         """
         for vehicle in self:
             company = vehicle.company_id
@@ -256,9 +204,7 @@ class FleetVehicle(models.Model):
                 continue
             for field_name, label in (
                 ('van_location_id', _("van stock location")),
-                ('van_warehouse_id', _("loading warehouse")),
                 ('salesman_user_id', _("van salesman")),
-                ('cash_journal_id', _("cash journal")),
             ):
                 record = vehicle[field_name]
                 if record and record.company_id and record.company_id != company:
@@ -275,10 +221,9 @@ class FleetVehicle(models.Model):
     def _check_salesman_single_van(self):
         """One salesman drives one van at a time.
 
-        This follows the requirement document, which states that each salesman
-        is assigned to exactly one van/route at a time. Relax this constraint
-        only once the client confirms van sharing is needed - van stock cannot
-        be attributed to a person otherwise.
+        The whole flow depends on it: a salesman's sale order finds its van -
+        and therefore its stock location - through this link, so two vans per
+        salesman would make that lookup ambiguous.
         """
         for vehicle in self:
             if not (vehicle.is_sales_van and vehicle.salesman_user_id
@@ -295,10 +240,28 @@ class FleetVehicle(models.Model):
                 raise ValidationError(_(
                     "%(salesman)s is already assigned to van %(other)s. A "
                     "salesman can operate only one van at a time, otherwise "
-                    "van stock and cash cannot be attributed to them.",
+                    "van stock and sales cannot be attributed to them.",
                     salesman=vehicle.salesman_user_id.display_name,
                     other=conflict.display_name,
                 ))
+
+    # --------------------------------------------------------------------
+    # Lookup
+    # --------------------------------------------------------------------
+    @api.model
+    def _van_sales_van_of(self, user):
+        """The active sales van driven by ``user``, or an empty recordset.
+
+        sudo: used by server-side hooks where the acting user may not be able
+        to read Fleet. Returns at most one van - guaranteed by
+        ``_check_salesman_single_van``.
+        """
+        if not user:
+            return self.browse()
+        return self.sudo().search([
+            ('is_sales_van', '=', True),
+            ('salesman_user_id', '=', user.id),
+        ], limit=1)
 
     # --------------------------------------------------------------------
     # Actions
@@ -316,17 +279,6 @@ class FleetVehicle(models.Model):
                 'active_model': 'fleet.vehicle',
                 'active_ids': self.ids,
             },
-        }
-
-    def action_van_sales_view_routes(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Routes"),
-            'res_model': 'van.sales.route',
-            'view_mode': 'list,form',
-            'domain': [('van_id', '=', self.id)],
-            'context': {'default_van_id': self.id},
         }
 
     def action_van_sales_view_quants(self):

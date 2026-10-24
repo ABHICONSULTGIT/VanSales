@@ -1,40 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="van_sales_visit_view_form_sale" model="ir.ui.view">
-        <field name="name">van.sales.visit.form.sale</field>
-        <field name="model">van.sales.visit</field>
-        <field name="inherit_id" ref="van_sales_base.van_sales_visit_view_form"/>
+    <!-- The Sale Order column and a Sell button on every visit line. -->
+    <record id="van_sales_visit_plan_view_form_sale" model="ir.ui.view">
+        <field name="name">van.sales.visit.plan.form.sale</field>
+        <field name="model">van.sales.visit.plan</field>
+        <field name="inherit_id" ref="van_sales_base.van_sales_visit_plan_view_form"/>
         <field name="arch" type="xml">
-
-            <xpath expr="//header" position="inside">
+            <xpath expr="//field[@name='visit_ids']/list/field[@name='stop_location_id']"
+                   position="after">
+                <field name="sale_order_id" readonly="1"/>
                 <button name="action_van_sales_new_order" type="object"
-                        string="Sell Here" class="btn-primary"
-                        invisible="state not in ('checked_in', 'done')"/>
-                <button name="action_van_sales_new_collection" type="object"
-                        string="Collect Cash"
-                        invisible="state not in ('checked_in', 'done')"/>
+                        string="Sell" icon="fa-shopping-cart"
+                        invisible="sale_order_id"/>
             </xpath>
+        </field>
+    </record>
 
-            <xpath expr="//sheet" position="inside">
-                <group string="Sales at this stop" name="van_sales_sale"
-                       invisible="sale_order_count == 0 and invoice_count == 0 and collection_count == 0">
-                    <group>
-                        <field name="sale_order_count"/>
-                        <field name="invoice_count"/>
-                        <field name="collection_count"/>
-                    </group>
-                    <group>
-                        <button name="action_van_sales_view_orders" type="object"
-                                string="View Orders" class="btn-link p-0"
-                                invisible="sale_order_count == 0"/>
-                        <button name="action_van_sales_view_invoices" type="object"
-                                string="View Invoices" class="btn-link p-0"
-                                invisible="invoice_count == 0"/>
-                    </group>
-                </group>
+    <record id="van_sales_visit_view_list_sale" model="ir.ui.view">
+        <field name="name">van.sales.visit.list.sale</field>
+        <field name="model">van.sales.visit</field>
+        <field name="inherit_id" ref="van_sales_base.van_sales_visit_view_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='stop_location_id']" position="after">
+                <field name="sale_order_id"/>
             </xpath>
-
         </field>
     </record>
 

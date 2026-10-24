@@ -13,8 +13,11 @@ ships **from the van's own stock**, invoices, and gets paid on the spot.
   route whose rule sources from the van's stock location. Odoo's own
   procurement then does the rest, so quantity delivered, invoice status,
   backorders and returns all behave exactly as standard - no core overrides.
-* **Sell from a visit.** One action on a customer stop raises the order with the
-  customer, van, route, visit and van delivery route already set.
+* **The day builds itself.** Every order a van salesman raises lands on his
+  visit plan for that day: the plan is created if needed, a route stop for the
+  same customer is ticked off with the order, and a sale off the route is
+  simply added as a new line. A Sell button on an open stop raises the order
+  with everything filled in.
 * **Over-sell enforcement.** The policy configured in *Van Sales - Stock* is
   applied here, at order confirmation, because this is where a line is actually
   sold.
@@ -27,12 +30,12 @@ ships **from the van's own stock**, invoices, and gets paid on the spot.
 
 Deliberately not included, because the answers are not in: free-of-charge
 goods, returns and credit notes, end-of-day cash hand-in, and the identity of
-a walk-up buyer on a location route. See the README.
+a walk-up buyer at a location stop. See the README.
 """,
     'author': "BizTech Computers",
     'website': "https://biztechbh.biz/",
     'category': 'Sales/Van Sales',
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'license': 'OPL-1',
     'depends': [
         'van_sales_stock',
@@ -49,7 +52,6 @@ a walk-up buyer on a location route. See the README.
         'views/account_move_views.xml',
         'views/van_sales_collection_views.xml',
         'views/van_sales_visit_views.xml',
-        'views/fleet_vehicle_views.xml',
         'views/van_sales_sale_menus.xml',
     ],
     'post_init_hook': 'post_init_hook',

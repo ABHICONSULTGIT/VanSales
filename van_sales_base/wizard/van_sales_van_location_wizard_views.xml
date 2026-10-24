@@ -29,8 +29,6 @@
                         <list string="Vehicles">
                             <field name="license_plate"/>
                             <field name="model_id"/>
-                            <field name="is_sales_van"/>
-                            <field name="van_warehouse_id"/>
                             <field name="van_location_id"/>
                             <field name="salesman_user_id" widget="many2one_avatar_user"/>
                         </list>

@@ -7,12 +7,18 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
 
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_van_sales_view_visit_plan" type="object"
+                        class="oe_stat_button" icon="fa-map-marker"
+                        string="Visit Plan" invisible="not van_visit_id"/>
+            </xpath>
+
             <xpath expr="//group[@name='order_details']" position="inside">
                 <field name="van_id" options="{'no_create': True}"
                        readonly="state in ('sale', 'cancel')"/>
                 <field name="van_route_id" options="{'no_create': True}"
                        invisible="not van_id" readonly="state in ('sale', 'cancel')"/>
-                <field name="van_visit_id" options="{'no_create': True}"
+                <field name="van_visit_id" options="{'no_open': True}"
                        invisible="not van_visit_id" readonly="1"/>
                 <field name="van_delivery_route_id"
                        invisible="not van_id" readonly="1"/>

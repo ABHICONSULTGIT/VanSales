@@ -19,18 +19,14 @@ by *Van Sales - Base* into a working stock flow:
   the "prevent or warn on selling beyond van stock, configurable per product"
   requirement is implemented here as a policy plus a checking service. The
   enforcement point lives in the sales module.
-* **End-of-day reconciliation** - counted stock against system stock, with the
-  movement breakdown that explains the difference, applied as a standard
-  inventory adjustment.
-
-Reconciliation is computed from ``stock.move``, not from sales documents. That
-means it is correct today with no sales module installed, and it will pick up
-sales movements automatically once *Van Sales - Sale* exists.
+* **Van stock count** - System, Counted and Difference per product. Applying
+  corrects the van as a standard inventory adjustment; one button then raises
+  the return of the counted stock as an ordinary draft transfer.
 """,
     'author': "BizTech Computers",
     'website': "https://biztechbh.biz/",
     'category': 'Inventory/Van Sales',
-    'version': '19.0.1.2.0',
+    'version': '19.0.2.1.0',
     'license': 'OPL-1',
     'depends': [
         'van_sales_base',

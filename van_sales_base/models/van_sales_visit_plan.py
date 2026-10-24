@@ -1,15 +1,19 @@
 # Part of the Van Sales project.
 
+import psycopg2
+
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class VanSalesVisitPlan(models.Model):
-    """One day's stop list for one route.
+    """One salesman's day.
 
-    Plans are created explicitly (per route, per date) and populated from the
-    route's customer list. There is no automatic generator yet: that needs the
-    visit frequency model, which the requirement document leaves undefined.
+    The base of a plan is the salesman and his van. A route is optional: when
+    one is set, its stops are copied in as the checklist of places he is
+    expected to cover today. It never restricts him - every sale he makes that
+    day, on the route or off it, is added to the same plan automatically (see
+    ``van_sales_sale``).
     """
 
     _name = 'van.sales.visit.plan'
@@ -23,129 +27,125 @@ class VanSalesVisitPlan(models.Model):
     date = fields.Date(
         string="Date", required=True, index=True, tracking=True,
         default=fields.Date.context_today)
-    route_id = fields.Many2one(
-        comodel_name='van.sales.route', string="Route",
-        required=True, index=True, tracking=True,
-        check_company=True, ondelete='restrict')
-    van_id = fields.Many2one(
-        comodel_name='fleet.vehicle', string="Van",
-        related='route_id.van_id', store=True, index='btree_not_null')
     salesman_user_id = fields.Many2one(
         comodel_name='res.users', string="Salesman",
-        related='route_id.salesman_user_id', store=True,
-        index='btree_not_null')
+        required=True, index=True, tracking=True,
+        domain="[('share', '=', False)]",
+        default=lambda self: self.env.user)
+    van_id = fields.Many2one(
+        comodel_name='fleet.vehicle', string="Van",
+        compute='_compute_van_id', store=True, readonly=True,
+        index='btree_not_null',
+        help="The van this salesman drives. Kept as it was on the day if he "
+             "later moves to another van.")
+    route_id = fields.Many2one(
+        comodel_name='van.sales.route', string="Route",
+        index='btree_not_null', tracking=True,
+        check_company=True, ondelete='restrict',
+        help="Optional. Its stops are added to the plan as today's checklist. "
+             "The salesman can still sell anywhere.")
     company_id = fields.Many2one(
-        comodel_name='res.company', related='route_id.company_id',
-        store=True, index=True)
-    state = fields.Selection(
-        selection=[
-            ('draft', "Draft"),
-            ('in_progress', "In Progress"),
-            ('done', "Done"),
-            ('cancel', "Cancelled"),
-        ],
-        string="Status", default='draft', required=True,
-        tracking=True, copy=False)
+        comodel_name='res.company', string="Company",
+        required=True, index=True,
+        default=lambda self: self.env.company)
     visit_ids = fields.One2many(
         comodel_name='van.sales.visit', inverse_name='plan_id',
         string="Visits")
-    visit_count = fields.Integer(
-        string="Planned", compute='_compute_visit_counts')
-    visit_done_count = fields.Integer(
-        string="Completed", compute='_compute_visit_counts')
-    visit_pending_count = fields.Integer(
-        string="Pending", compute='_compute_visit_counts')
 
-    _route_date_uniq = models.Constraint(
-        'UNIQUE(route_id, date)',
-        "A visit plan already exists for this route on this date.",
+    _salesman_date_uniq = models.Constraint(
+        'UNIQUE(salesman_user_id, date)',
+        "This salesman already has a visit plan for this date.",
     )
 
     # --------------------------------------------------------------------
     # Compute
     # --------------------------------------------------------------------
-    @api.depends('route_id.code', 'date')
+    @api.depends('salesman_user_id', 'date')
     def _compute_name(self):
         for plan in self:
-            if plan.route_id and plan.date:
+            if plan.salesman_user_id and plan.date:
                 plan.name = "%s / %s" % (
-                    plan.route_id.code, fields.Date.to_string(plan.date))
+                    plan.salesman_user_id.name,
+                    fields.Date.to_string(plan.date))
             else:
                 plan.name = False
 
-    @api.depends('visit_ids.state')
-    def _compute_visit_counts(self):
+    @api.depends('salesman_user_id')
+    def _compute_van_id(self):
+        Vehicle = self.env['fleet.vehicle']
         for plan in self:
-            visits = plan.visit_ids
-            plan.visit_count = len(visits)
-            plan.visit_done_count = len(
-                visits.filtered(lambda v: v.state == 'done'))
-            plan.visit_pending_count = len(
-                visits.filtered(lambda v: v.state in ('planned', 'checked_in')))
+            plan.van_id = Vehicle._van_sales_van_of(plan.salesman_user_id)
+
+    # --------------------------------------------------------------------
+    # Constraints
+    # --------------------------------------------------------------------
+    @api.constrains('salesman_user_id', 'van_id')
+    def _check_salesman_has_van(self):
+        for plan in self:
+            if plan.salesman_user_id and not plan.van_id:
+                raise ValidationError(_(
+                    "%s does not drive a sales van, so a visit plan cannot be "
+                    "made for him. Assign him to a van in Van Sales > "
+                    "Configuration > Sales Vans first.",
+                    plan.salesman_user_id.display_name))
 
     # --------------------------------------------------------------------
     # ORM overrides
     # --------------------------------------------------------------------
     @api.model_create_multi
     def create(self, vals_list):
-        """Populate the stop list straight away.
-
-        A plan without stops is not usable, and the rule used here is exactly
-        the rule the Generate Stops button uses - every customer on the route,
-        in route order. No scheduling assumption is introduced.
-
-        Pass ``van_sales_no_visit_generation`` in the context to skip it, for
-        data imports or a plan that is to be filled in by hand.
-        """
         plans = super().create(vals_list)
         if not self.env.context.get('van_sales_no_visit_generation'):
-            plans.filtered(
-                lambda p: p.state == 'draft' and p.route_id.line_ids
-            )._generate_visits()
+            plans.filtered('route_id')._generate_visits()
         return plans
 
-    def unlink(self):
-        blocked = self.filtered(lambda p: p.state not in ('draft', 'cancel'))
-        if blocked:
-            raise UserError(_(
-                "A visit plan can only be deleted while it is draft or "
-                "cancelled. Cancel these plans first: %s",
-                ", ".join(blocked.mapped('display_name')),
-            ))
-        return super().unlink()
+    def write(self, vals):
+        result = super().write(vals)
+        # A route can be given to the salesman at any point in the day.
+        if vals.get('route_id') \
+                and not self.env.context.get('van_sales_no_visit_generation'):
+            self._generate_visits()
+        return result
 
     # --------------------------------------------------------------------
-    # Actions
+    # Route stops
     # --------------------------------------------------------------------
-    def _generate_visits(self):
-        """Create one stop per route customer that is not already planned.
+    @staticmethod
+    def _van_sales_stop_key(partner, location):
+        """A stop is identified by its customer when it has one, else its place.
 
-        Non-raising, so it can run from ``create()`` without blocking a plan
-        for a route that has no customers yet. Idempotent: existing stops are
-        left untouched, so a customer added to the route later can be pulled
-        in without disturbing visits already in progress.
+        Matching on the customer alone is deliberate: if he was already sold to
+        earlier in the day, his route stop counts as covered - even though that
+        sale's line was created without the stop location.
         """
+        return ('partner', partner.id) if partner else ('location', location.id)
+
+    def _generate_visits(self):
+        """Add the route's stops that are not on the plan yet. Idempotent."""
         Visit = self.env['van.sales.visit']
         created = Visit
-        for plan in self:
-            if plan.state in ('done', 'cancel'):
-                continue
-            planned = {
-                (v.stop_type, v.partner_id.id, v.stop_location_id.id)
+        for plan in self.filtered('route_id'):
+            existing = {
+                self._van_sales_stop_key(v.partner_id, v.stop_location_id): v
                 for v in plan.visit_ids
             }
-            values = [
-                {
+            values = []
+            for line in plan.route_id.line_ids:
+                key = self._van_sales_stop_key(
+                    line.partner_id, line.stop_location_id)
+                visit = existing.get(key)
+                if visit:
+                    # Fill in the place on a stop that was added before the
+                    # route, so the checklist shows it.
+                    if line.stop_location_id and not visit.stop_location_id:
+                        visit.stop_location_id = line.stop_location_id
+                    continue
+                values.append({
                     'plan_id': plan.id,
-                    'stop_type': line.stop_type,
+                    'sequence': line.sequence,
                     'partner_id': line.partner_id.id,
                     'stop_location_id': line.stop_location_id.id,
-                    'sequence': line.sequence,
-                }
-                for line in plan.route_id.line_ids
-                if (line.stop_type, line.partner_id.id,
-                    line.stop_location_id.id) not in planned
-            ]
+                })
             if values:
                 created |= Visit.create(values)
         return created
@@ -153,61 +153,43 @@ class VanSalesVisitPlan(models.Model):
     def action_generate_visits(self):
         """Button version: says why nothing happened instead of staying silent."""
         for plan in self:
-            if plan.state in ('done', 'cancel'):
+            if not plan.route_id:
                 raise UserError(_(
-                    "Plan %s is %s, so its visits cannot be regenerated.",
-                    plan.display_name, plan.state))
+                    "Plan %s has no route, so there are no stops to load.",
+                    plan.display_name))
             if not plan.route_id.line_ids:
                 raise UserError(_(
-                    "Route %s has no stops, so there is nothing to plan.",
-                    plan.route_id.display_name))
-        return self._generate_visits()
+                    "Route %s has no stops.", plan.route_id.display_name))
+        self._generate_visits()
+        return True
 
-    def action_start(self):
-        for plan in self:
-            if plan.state != 'draft':
-                raise UserError(_(
-                    "Only a draft plan can be started. %s is %s.",
-                    plan.display_name, plan.state))
-            if not plan.visit_ids:
-                raise UserError(_(
-                    "Plan %s has no visits yet. Generate the stop list first.",
-                    plan.display_name))
-        self.write({'state': 'in_progress'})
+    # --------------------------------------------------------------------
+    # Used by the sale order hook
+    # --------------------------------------------------------------------
+    @api.model
+    def _van_sales_get_or_create(self, user, date, company):
+        """The plan for ``user`` on ``date``, created if it does not exist.
 
-    def action_done(self):
-        for plan in self:
-            if plan.state != 'in_progress':
-                raise UserError(_(
-                    "Only a plan in progress can be closed. %s is %s.",
-                    plan.display_name, plan.state))
-            open_visits = plan.visit_ids.filtered(
-                lambda v: v.state == 'checked_in')
-            if open_visits:
-                raise UserError(_(
-                    "Check out of these stops before closing the plan: %s",
-                    ", ".join(v.display_name for v in open_visits),
-                ))
-        self.write({'state': 'done'})
+        Race-safe: two orders saved at the same moment for the same salesman
+        would both find no plan and both try to create one. The second create
+        hits the unique constraint inside a savepoint, which is rolled back,
+        and the plan the first one created is returned instead.
 
-    def action_cancel(self):
-        self.write({'state': 'cancel'})
-
-    def action_draft(self):
-        for plan in self:
-            if plan.state != 'cancel':
-                raise UserError(_(
-                    "Only a cancelled plan can be reset to draft. %s is %s.",
-                    plan.display_name, plan.state))
-        self.write({'state': 'draft'})
-
-    def action_view_visits(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _("Visits"),
-            'res_model': 'van.sales.visit',
-            'view_mode': 'list,form',
-            'domain': [('plan_id', '=', self.id)],
-            'context': {'default_plan_id': self.id},
-        }
+        sudo: the caller may be an office user with no Van Sales rights
+        creating an order on the salesman's behalf.
+        """
+        Plan = self.sudo()
+        domain = [('salesman_user_id', '=', user.id), ('date', '=', date)]
+        plan = Plan.search(domain, limit=1)
+        if plan:
+            return plan
+        try:
+            with self.env.cr.savepoint():
+                return Plan.create({
+                    'salesman_user_id': user.id,
+                    'date': date,
+                    'company_id': company.id,
+                })
+        except psycopg2.errors.UniqueViolation:
+            self.env.invalidate_all()
+            return Plan.search(domain, limit=1)

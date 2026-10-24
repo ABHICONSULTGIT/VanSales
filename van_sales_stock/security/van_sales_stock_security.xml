@@ -21,6 +21,20 @@
         <field name="domain_force">[('salesman_user_id', '=', user.id)]</field>
         <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_user'))]"/>
     </record>
+    <!-- Lines follow their count: a salesman counts only his own van. -->
+    <record id="van_sales_reconciliation_line_own_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation Line: own van only</field>
+        <field name="model_id" ref="model_van_sales_reconciliation_line"/>
+        <field name="domain_force">[('reconciliation_id.salesman_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_user'))]"/>
+    </record>
+    <record id="van_sales_reconciliation_line_all_rule" model="ir.rule">
+        <field name="name">Van Stock Reconciliation Line: all vans</field>
+        <field name="model_id" ref="model_van_sales_reconciliation_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[Command.link(ref('van_sales_base.group_van_sales_supervisor'))]"/>
+    </record>
+
     <record id="van_sales_reconciliation_all_rule" model="ir.rule">
         <field name="name">Van Stock Reconciliation: all vans</field>
         <field name="model_id" ref="model_van_sales_reconciliation"/>
